@@ -36,13 +36,14 @@ const expectedFiles = [
   "src/main.js",
   "src/styles.css",
   "src/circuitjs-theme.css",
-  "tests/diagnostic-engine.test.js",
-  "tests/editor-bridge.test.js",
   "scripts/server.mjs",
   "scripts/install-circuitjs.sh",
   "scripts/build-circuitjs-bridge.sh",
+  "scripts/build-pages.mjs",
   "scripts/check-project.mjs",
+  ".github/workflows/pages.yml",
   "vendor/circuitjs1/README.md",
+  "vendor/circuitjs1/empeirik-canvas-theme.patch",
   "vendor/circuitjs1/service-worker.js",
   "vendor/circuitjs1/src/com/lushprojects/circuitjs1/client/AgentBridge.java",
   "vendor/circuitjs1/src/com/lushprojects/circuitjs1/client/JSInterface.java",
@@ -93,7 +94,7 @@ check(!html.includes("session-footer"), "licensing and upstream credits belong i
 
 const pkg = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8"));
 check(pkg.name === "empeirik", "package.json name must be empeirik");
-for (const scriptName of ["start", "test", "check", "install:circuitjs", "build:circuitjs-bridge"]) {
+for (const scriptName of ["start", "check", "build:pages", "install:circuitjs", "build:circuitjs-bridge"]) {
   check(typeof pkg.scripts[scriptName] === "string", `package.json missing script: ${scriptName}`);
 }
 check(pkg.license === "GPL-2.0-or-later", "package.json license must be GPL-2.0-or-later");
@@ -313,8 +314,20 @@ check(JSON.stringify(palette) === JSON.stringify(["#3f3d3a", "#d8794d", "#f7f3eb
 const circuitTheme = readFileSync(resolve(ROOT, "src/circuitjs-theme.css"), "utf8");
 const circuitThemePalette = Array.from(new Set((circuitTheme.match(/#[0-9a-fA-F]{6}/g) || []).map((color) => color.toLowerCase()))).sort();
 check(JSON.stringify(circuitThemePalette) === JSON.stringify(["#3f3d3a", "#d8794d", "#f7f3eb"].sort()), "CircuitJS1 chrome must use the same three-color palette");
+const buildBridge = readFileSync(resolve(ROOT, "scripts/build-circuitjs-bridge.sh"), "utf8");
+const canvasThemePatch = readFileSync(resolve(ROOT, "vendor/circuitjs1/empeirik-canvas-theme.patch"), "utf8");
+check(buildBridge.includes("empeirik-canvas-theme.patch"), "CircuitJS1 build must apply the native canvas theme patch");
+check(canvasThemePatch.includes("#f7f3eb") && canvasThemePatch.includes("#3f3d3a") && canvasThemePatch.includes("whiteBackground\", true"), "native canvas theme must default to the Empeirik light palette");
 const gitignore = readFileSync(resolve(ROOT, ".gitignore"), "utf8");
-check(/^docs\/$/m.test(gitignore) && /^design-qa\.md$/m.test(gitignore), "local QA evidence must stay out of Git history");
+check(/^docs\/$/m.test(gitignore) && /^design-qa\.md$/m.test(gitignore) && /^tests\/$/m.test(gitignore), "local QA and test artifacts must stay out of Git history");
+check(/^_site\/$/m.test(gitignore), "generated GitHub Pages output must stay out of Git history");
+const pagesBuild = readFileSync(resolve(ROOT, "scripts/build-pages.mjs"), "utf8");
+check(pagesBuild.includes('["index.html", "src", "circuitjs"]'), "Pages build must publish only the runnable static application");
+check(pagesBuild.includes(".nojekyll"), "Pages build must disable Jekyll processing for the compiled runtime");
+const pagesWorkflow = readFileSync(resolve(ROOT, ".github/workflows/pages.yml"), "utf8");
+for (const required of ["actions/configure-pages@v5", "actions/upload-pages-artifact@v4", "actions/deploy-pages@v4", "npm run build:pages"]) {
+  check(pagesWorkflow.includes(required), `Pages workflow is missing ${required}`);
+}
 check(!html.includes("Guided view"), "the duplicate guided canvas must not remain in the page");
 check(!html.includes("Diagnostic state"), "the abstract diagnostic-state screen must not remain in the page");
 check(!html.includes("Collaboration console"), "the separate collaboration console must not remain in the page");

@@ -1,9 +1,9 @@
 /*
  * Empeirik color layer for the embedded CircuitJS1 interface.
  *
- * CircuitJS1 retains its native layout, control geometry, canvas background,
- * and electrical signal colors. This stylesheet only unifies the surrounding
- * simulator chrome with Empeirik's three-color palette.
+ * CircuitJS1 retains its native layout, control geometry, and electrical
+ * signal colors. This stylesheet unifies the surrounding simulator chrome;
+ * the canvas light mode is themed in the native source overlay.
  */
 
 :root {
