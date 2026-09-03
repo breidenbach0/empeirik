@@ -16,6 +16,30 @@
       .catch(function () { return false; });
   }
 
+  function applyCircuitJsTheme(iframe) {
+    try {
+      var frameDocument = iframe.contentDocument;
+      if (!frameDocument || !frameDocument.head) return false;
+      if (frameDocument.getElementById("empeirik-circuitjs-theme")) return true;
+      var theme = frameDocument.createElement("link");
+      theme.id = "empeirik-circuitjs-theme";
+      theme.rel = "stylesheet";
+      theme.href = new URL("src/circuitjs-theme.css", root.document.baseURI).href;
+      theme.addEventListener("load", function () {
+        iframe.dataset.themeReady = "true";
+        delete iframe.dataset.themeError;
+      });
+      theme.addEventListener("error", function () {
+        iframe.dataset.themeError = "true";
+      });
+      frameDocument.head.appendChild(theme);
+      return true;
+    } catch (error) {
+      iframe.dataset.themeError = "true";
+      return false;
+    }
+  }
+
   async function boot() {
     var scenarioApi = M.scenario;
     var runtimePresent = await probeRuntime();
@@ -29,8 +53,13 @@
       iframe.title = "CircuitJS1 live circuit simulator";
       slot.appendChild(iframe);
       adapter = new M.circuitAdapter.CircuitJS1BridgeAdapter({ scenarioApi: scenarioApi });
+      iframe.addEventListener("load", function () {
+        applyCircuitJsTheme(iframe);
+      });
+      var connection = adapter.connect(iframe);
       iframe.src = "circuitjs/circuitjs.html";
-      await adapter.connect(iframe);
+      await connection;
+      applyCircuitJsTheme(iframe);
     } else {
       adapter = new M.circuitAdapter.DeterministicPreviewAdapter({ scenarioApi: scenarioApi });
     }
@@ -57,31 +86,6 @@
 
     ui = M.ui.createUI({
       handlers: {
-        newSession: function () {
-          engine.reset({ loadBranch: false });
-          workspace.reset({ preserveCircuit: true });
-          renderAll();
-        },
-        importCircuit: async function (file) {
-          var result = await workspace.loadCircuit({
-            circuitText: file.circuitText,
-            circuitName: file.circuitName || "Imported circuit",
-            summary: "Imported from a local circuit file.",
-            preserveCurrent: true,
-            basedOnRevision: workspace.state.revision
-          }, { actor: "human" });
-          engine.reset({ loadBranch: false });
-          return result;
-        },
-        getCircuitText: function () {
-          return adapter.exportCircuit();
-        },
-        getCircuitSvg: function () {
-          if (!adapter.exportCircuitSvg) {
-            throw new Error("SVG and PNG export require the connected CircuitJS1 runtime.");
-          }
-          return adapter.exportCircuitSvg();
-        },
         performMeasurement: function (taskId) {
           return engine.performMeasurement({ taskId: taskId }, { actor: "human" });
         },

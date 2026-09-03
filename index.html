@@ -16,67 +16,10 @@
     <div class="brand-block">
       <h1>empeirik</h1>
     </div>
-
-    <div class="top-actions">
-      <button id="new-session" class="button button-quiet" type="button">New session</button>
-    </div>
   </header>
 
   <main class="workspace-shell">
     <section class="simulator-panel" aria-label="CircuitJS1 workspace">
-      <div class="simulator-toolbar">
-        <div class="circuit-heading">
-          <span class="eyebrow">CircuitJS1 workspace</span>
-          <h2 id="circuit-title">Environmental controller board</h2>
-        </div>
-        <div class="simulator-actions">
-          <button
-            id="import-circuit"
-            class="button button-quiet"
-            type="button"
-            title="Import .circuitjs, .txt, or .xml files up to 250 kB"
-          >Import</button>
-          <input
-            id="circuit-import-input"
-            type="file"
-            accept=".circuitjs,.txt,.xml,text/plain,application/xml,text/xml"
-            hidden
-          />
-          <button
-            id="export-circuit"
-            class="button button-quiet"
-            type="button"
-            aria-haspopup="dialog"
-            aria-expanded="false"
-            aria-controls="export-menu"
-          >Export</button>
-          <div id="export-menu" class="export-popover" role="dialog" aria-labelledby="export-title" hidden>
-            <div class="export-popover-heading">
-              <strong id="export-title">Export circuit</strong>
-              <span>Choose a file format</span>
-            </div>
-            <div class="export-format-list">
-              <button class="export-format" type="button" data-export-format="circuitjs">
-                <span>CircuitJS file</span>
-                <small>.circuitjs · re-importable</small>
-              </button>
-              <button class="export-format" type="button" data-export-format="text">
-                <span>Plain text</span>
-                <small>.txt · re-importable</small>
-              </button>
-              <button class="export-format" type="button" data-export-format="svg">
-                <span>Vector image</span>
-                <small>.svg · scalable schematic</small>
-              </button>
-              <button class="export-format" type="button" data-export-format="png">
-                <span>PNG image</span>
-                <small>.png · rendered schematic</small>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="circuitjs-slot" id="circuitjs-slot">
         <div class="runtime-message" id="circuitjs-empty">
           <span class="eyebrow">Simulator unavailable</span>
