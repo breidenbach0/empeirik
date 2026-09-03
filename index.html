@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>empeirik — build and diagnose circuits with an agent</title>
+  <meta
+    name="description"
+    content="empeirik gives a browser agent direct, inspectable control of CircuitJS1 for circuit diagnosis and circuit building."
+  />
+  <link rel="icon" href="circuitjs/icon128.png" />
+  <link rel="stylesheet" href="src/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-block">
+      <h1>empeirik</h1>
+      <span class="brand-note">Agent-enabled CircuitJS1</span>
+    </div>
+
+    <div class="mode-switch" role="group" aria-label="Session mode">
+      <button id="mode-diagnose" class="mode-button is-active" type="button" aria-pressed="true">
+        Diagnose
+      </button>
+      <button id="mode-build" class="mode-button" type="button" aria-pressed="false">
+        Build
+      </button>
+    </div>
+
+    <div class="top-actions">
+      <span id="webmcp-badge" class="connection-badge">Connecting WebMCP…</span>
+      <button id="new-session" class="button button-quiet" type="button">New session</button>
+    </div>
+  </header>
+
+  <main class="workspace-shell">
+    <section class="simulator-panel" aria-label="CircuitJS1 workspace">
+      <div class="simulator-toolbar">
+        <div class="circuit-heading">
+          <span class="eyebrow">CircuitJS1 workspace</span>
+          <h2 id="circuit-title">Environmental controller board</h2>
+        </div>
+        <div class="simulator-actions">
+          <button id="import-circuit" class="button button-quiet" type="button">Import</button>
+          <input
+            id="circuit-import-input"
+            type="file"
+            accept=".txt,.xml,.circuitjs,text/plain,application/xml"
+            hidden
+          />
+          <button id="export-circuit" class="button button-quiet" type="button">Export</button>
+        </div>
+      </div>
+
+      <div class="circuitjs-slot" id="circuitjs-slot">
+        <div class="runtime-message" id="circuitjs-empty">
+          <span class="eyebrow">Simulator unavailable</span>
+          <h2>Install the CircuitJS1 runtime</h2>
+          <p>The session UI still loads, but arbitrary circuit building and live measurements require CircuitJS1.</p>
+          <pre><code>npm run install:circuitjs
+npm start</code></pre>
+        </div>
+      </div>
+
+    </section>
+
+    <aside class="session-panel" aria-label="Circuit session">
+      <header class="session-header">
+        <div class="session-kicker-row">
+          <span class="eyebrow">Session</span>
+          <span id="session-status" class="session-status">Ready</span>
+        </div>
+        <h2 id="session-title">Diagnose this circuit</h2>
+        <p id="session-goal">Inspect, simulate, and document findings on the circuit currently open.</p>
+        <div id="session-facts" class="session-facts" hidden></div>
+      </header>
+
+      <div class="session-body">
+        <section id="pending-section" class="pending-section" aria-labelledby="pending-title" hidden>
+          <div class="section-label-row">
+            <h3 id="pending-title">Needs you</h3>
+            <span id="pending-count">0</span>
+          </div>
+          <div id="pending-actions"></div>
+        </section>
+
+        <section class="activity-section" aria-labelledby="activity-title">
+          <div class="section-label-row">
+            <h3 id="activity-title">Work log</h3>
+            <span id="workspace-revision">REV 0</span>
+          </div>
+          <div id="session-feed" class="session-feed"></div>
+        </section>
+
+        <details class="tool-details">
+          <summary>
+            <span>Latest WebMCP call</span>
+            <span id="tool-status">None yet</span>
+          </summary>
+          <pre id="last-call">No tool calls yet.</pre>
+        </details>
+
+        <footer class="session-footer">
+          <span>empeirik is GPL-2.0-or-later.</span>
+          <a href="https://www.falstad.com/circuit/" rel="noreferrer noopener" target="_blank">CircuitJS1 credits</a>
+        </footer>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="src/scenario.js"></script>
+  <script src="src/circuit-adapter.js"></script>
+  <script src="src/diagnostic-engine.js"></script>
+  <script src="src/workspace.js"></script>
+  <script src="src/webmcp.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
