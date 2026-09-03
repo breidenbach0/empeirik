@@ -124,15 +124,14 @@ The deeper test harness is kept locally and ignored from the public repository.
 
 ## Live site
 
-The GitHub Pages workflow publishes the static application from `main`. Once
-Pages is enabled with **Settings → Pages → Source: GitHub Actions**, the public
-project URL is:
+The public project is live at:
 
 <https://breidenbach0.github.io/empeirik/>
 
-Because the application and embedded CircuitJS1 runtime are served from the
-same HTTPS origin, judges can use the live URL in ChatGPT's in-app browser or a
-WebMCP-enabled Google Chrome session.
+The GitHub Pages workflow publishes the static application after every push to
+`main`. The application and embedded CircuitJS1 runtime share one HTTPS origin,
+so judges can use the URL in ChatGPT's in-app browser or a WebMCP-enabled Google
+Chrome session.
 
 ## License and upstream
 
