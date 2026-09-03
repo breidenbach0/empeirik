@@ -2,8 +2,8 @@
  * empeirik entry point.
  *
  * The page has one work surface: CircuitJS1 on the left and a single
- * human/agent session feed on the right. WebMCP can either diagnose the
- * current circuit or build and test a new one.
+ * human/agent session feed on the right. The user's request determines what
+ * happens; the workspace does not split building and diagnosis into modes.
  */
 (function (root) {
   "use strict";
@@ -29,7 +29,7 @@
       iframe.title = "CircuitJS1 live circuit simulator";
       slot.appendChild(iframe);
       adapter = new M.circuitAdapter.CircuitJS1BridgeAdapter({ scenarioApi: scenarioApi });
-      iframe.src = "circuitjs/circuitjs.html";
+      iframe.src = "circuitjs/circuitjs.html?lang=en";
       await adapter.connect(iframe);
     } else {
       adapter = new M.circuitAdapter.DeterministicPreviewAdapter({ scenarioApi: scenarioApi });
@@ -57,12 +57,6 @@
 
     ui = M.ui.createUI({
       handlers: {
-        setMode: function (mode) {
-          return workspace.setMode(
-            { mode: mode, basedOnRevision: workspace.state.revision },
-            { actor: "human" }
-          );
-        },
         newSession: function () {
           engine.reset({ loadBranch: false });
           workspace.reset({ preserveCircuit: true });
@@ -110,7 +104,6 @@
     renderAll();
 
     var registration = await controller.register();
-    ui.setWebmcpBadge(registration);
 
     root.Empeirik = {
       engine: engine,
@@ -126,7 +119,7 @@
       },
       loadExample: async function () {
         engine.reset({ loadBranch: false });
-        workspace.reset({ mode: "diagnose", preserveCircuit: false });
+        workspace.reset({ preserveCircuit: false });
         await adapter.loadBranch("faulted");
         return workspace.getState();
       }

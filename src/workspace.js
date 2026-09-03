@@ -31,14 +31,14 @@
     return /^(\$|<\?xml\b|<cir\b)/i.test(String(value || "").trim());
   }
 
-  function initialState(scenario, mode, circuitName) {
+  function initialState(scenario, circuitName) {
+    var name = circuitName || scenario.case.title;
     return {
       revision: 0,
-      mode: mode || "diagnose",
       status: "ready",
       title: "New circuit session",
       goal: "",
-      circuitName: circuitName || scenario.case.title,
+      circuitName: name,
       simulationRunning: true,
       measurements: [],
       versions: [],
@@ -48,8 +48,8 @@
         {
           revision: 0,
           actor: "system",
-          kind: "workspace-ready",
-          title: "CircuitJS1 workspace ready",
+          kind: "circuit-loaded",
+          title: name + " loaded",
           detail: scenario.case.oneLine,
           at: new Date().toISOString()
         }
@@ -68,7 +68,7 @@
     this.versionBodies = {};
     this.versionCounter = 0;
     this.measurementCounter = 0;
-    this.state = initialState(this.scenario, "diagnose", this.scenario.case.title);
+    this.state = initialState(this.scenario, this.scenario.case.title);
   }
 
   WorkspaceSession.prototype.getState = function () {
@@ -147,50 +147,23 @@
 
   WorkspaceSession.prototype.reset = function (options) {
     options = options || {};
-    var mode = options.mode || this.state.mode || "diagnose";
     var name = options.preserveCircuit
       ? this.state.circuitName
       : this.scenario.case.title;
     this.versionBodies = {};
     this.versionCounter = 0;
     this.measurementCounter = 0;
-    this.state = initialState(this.scenario, mode, name);
+    this.state = initialState(this.scenario, name);
     this._emit("workspace-reset");
-    return this.getState();
-  };
-
-  WorkspaceSession.prototype.setMode = function (params, ctx) {
-    params = params || {};
-    this._checkRevision(params);
-    var mode = params.mode;
-    if (mode !== "diagnose" && mode !== "build") {
-      throw WorkspaceError("INVALID_MODE", "Mode must be 'diagnose' or 'build'.");
-    }
-    if (mode === this.state.mode) return this.getState();
-    this.state.mode = mode;
-    this._bump();
-    this._record(
-      (ctx && ctx.actor) || "human",
-      "mode-changed",
-      mode === "diagnose" ? "Switched to Diagnose" : "Switched to Build",
-      mode === "diagnose"
-        ? "Investigate the circuit currently open in CircuitJS1."
-        : "Create and test a circuit directly in CircuitJS1."
-    );
-    this._emit("mode-changed");
     return this.getState();
   };
 
   WorkspaceSession.prototype.startSession = async function (params, ctx) {
     params = params || {};
     this._checkRevision(params);
-    var mode = params.mode || this.state.mode;
-    if (mode !== "diagnose" && mode !== "build") {
-      throw WorkspaceError("INVALID_MODE", "Mode must be 'diagnose' or 'build'.");
-    }
     var goal = String(params.goal || "").trim();
     if (goal.length < 8) {
-      throw WorkspaceError("GOAL_REQUIRED", "Describe what to diagnose or build.");
+      throw WorkspaceError("GOAL_REQUIRED", "Describe what you want to build, inspect, or diagnose.");
     }
 
     if (params.circuitText) {
@@ -198,19 +171,16 @@
       await this.adapter.importCircuit(String(params.circuitText));
     }
 
-    this.state.mode = mode;
     this.state.status = "active";
     this.state.goal = goal;
-    this.state.title = String(params.title || (mode === "diagnose"
-      ? "Diagnose this circuit"
-      : "Build this circuit"));
+    this.state.title = String(params.title || "Circuit session");
     if (params.circuitName) this.state.circuitName = String(params.circuitName);
     this.state.outcome = null;
     this._bump();
     this._record(
       (ctx && ctx.actor) || "agent",
       "session-started",
-      mode === "diagnose" ? "Diagnosis started" : "Build started",
+      "Session started",
       goal
     );
     this._emit("session-started");
@@ -226,7 +196,7 @@
       circuit: circuit,
       next:
         this.state.status === "ready"
-          ? "Call start_session with mode 'diagnose' or 'build' and the user's goal."
+          ? "Call start_session with the user's goal."
           : "Inspect or change the CircuitJS1 circuit, then record concrete findings in the session."
     };
   };

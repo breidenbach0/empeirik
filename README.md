@@ -4,6 +4,8 @@ empeirik is a CircuitJS1-first workspace where a WebMCP agent can inspect,
 build, edit, simulate, and diagnose the same circuit the human sees. There is no
 second schematic or abstract diagnostic canvas: CircuitJS1 remains the source of
 truth and the session panel is one chronological human/agent work log.
+There is no Build/Diagnose mode: the user's request determines what the agent
+does in the shared circuit workspace.
 
 ## Run
 
@@ -23,7 +25,7 @@ and network access are required for a fresh bridge build.
 
 empeirik registers 38 WebMCP tools:
 
-- 9 session/workspace tools for Diagnose and Build workflows.
+- 9 session/workspace tools for the unified circuit workflow.
 - 20 native CircuitJS1 editor tools.
 - 9 guarded tools for the bundled hardware-diagnosis example.
 

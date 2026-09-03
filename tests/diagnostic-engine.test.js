@@ -571,7 +571,7 @@
   /* ---------------- generic CircuitJS workspace ---------------- */
 
   tests.push(function () {
-    return test("workspace supports build sessions, live shortcuts, and circuit restore", async function () {
+    return test("workspace uses one session for building, diagnosis, and circuit restore", async function () {
       var adapter = new adapterApi.DeterministicPreviewAdapter({ scenarioApi: scenarioApi });
       var workspace = new workspaceApi.WorkspaceSession({
         scenarioApi: scenarioApi,
@@ -579,13 +579,12 @@
       });
       var started = await workspace.startSession(
         {
-          mode: "build",
           goal: "Build and verify a healthy reset-release circuit.",
           basedOnRevision: 0
         },
         { actor: "agent" }
       );
-      assertEq(started.mode, "build", "build mode starts");
+      assertEq(typeof started.mode, "undefined", "workspace does not expose a build/diagnose mode");
       assertEq(started.status, "active", "session becomes active");
 
       var loaded = await workspace.loadCircuit(

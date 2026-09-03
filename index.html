@@ -15,20 +15,9 @@
   <header class="topbar">
     <div class="brand-block">
       <h1>empeirik</h1>
-      <span class="brand-note">Agent-enabled CircuitJS1</span>
-    </div>
-
-    <div class="mode-switch" role="group" aria-label="Session mode">
-      <button id="mode-diagnose" class="mode-button is-active" type="button" aria-pressed="true">
-        Diagnose
-      </button>
-      <button id="mode-build" class="mode-button" type="button" aria-pressed="false">
-        Build
-      </button>
     </div>
 
     <div class="top-actions">
-      <span id="webmcp-badge" class="connection-badge">Connecting WebMCP…</span>
       <button id="new-session" class="button button-quiet" type="button">New session</button>
     </div>
   </header>
@@ -61,20 +50,9 @@
 npm start</code></pre>
         </div>
       </div>
-
     </section>
 
-    <aside class="session-panel" aria-label="Circuit session">
-      <header class="session-header">
-        <div class="session-kicker-row">
-          <span class="eyebrow">Session</span>
-          <span id="session-status" class="session-status">Ready</span>
-        </div>
-        <h2 id="session-title">Diagnose this circuit</h2>
-        <p id="session-goal">Inspect, simulate, and document findings on the circuit currently open.</p>
-        <div id="session-facts" class="session-facts" hidden></div>
-      </header>
-
+    <aside class="session-panel" aria-label="Circuit activity">
       <div class="session-body">
         <section id="pending-section" class="pending-section" aria-labelledby="pending-title" hidden>
           <div class="section-label-row">
@@ -100,10 +78,6 @@ npm start</code></pre>
           <pre id="last-call">No tool calls yet.</pre>
         </details>
 
-        <footer class="session-footer">
-          <span>empeirik is GPL-2.0-or-later.</span>
-          <a href="https://www.falstad.com/circuit/" rel="noreferrer noopener" target="_blank">CircuitJS1 credits</a>
-        </footer>
       </div>
     </aside>
   </main>

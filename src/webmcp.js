@@ -7,9 +7,8 @@
  * browser supports it. When it does not, the same handlers stay available on
  * window.Empeirik.tools so the workflow is testable in any browser.
  *
- * Tool handlers are the ONLY path agent actions take into the engine, and
- * the guided demo calls these same handlers, so demo, console, and a real
- * WebMCP agent cannot diverge.
+ * Tool handlers are the only path agent actions take into the engine, keeping
+ * the visible circuit and work log aligned with WebMCP actions.
  *
  * This module splits cleanly into data (TOOL_DEFINITIONS, loadable without
  * a DOM, used by scripts/check-project.mjs) and a controller created per
@@ -38,7 +37,7 @@
       name: "get_workspace",
       title: "Read circuit workspace",
       description:
-        "Read the active Diagnose or Build session, CircuitJS1 connection, " +
+        "Read the active circuit session, CircuitJS1 connection, " +
         "circuit summary, measurements, saved versions, and visible work log. " +
         "Use this first.",
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -48,21 +47,21 @@
       name: "start_session",
       title: "Start circuit session",
       description:
-        "Start a concrete Diagnose or Build session using the user's goal. " +
+        "Start a circuit session using the user's goal. The same workspace " +
+        "supports building, inspection, simulation, and diagnosis. " +
         "Optionally load a complete CircuitJS export supplied by the user. " +
         WORKSPACE_REVISION_HINT,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: {
         type: "object",
         properties: {
-          mode: { type: "string", enum: ["diagnose", "build"] },
-          goal: { type: "string", description: "What should be diagnosed or built" },
+          goal: { type: "string", description: "What should be built, inspected, or diagnosed" },
           title: { type: "string" },
           circuitName: { type: "string" },
           circuitText: { type: "string", description: "Optional complete CircuitJS legacy '$' or XML '<cir>' export" },
           basedOnRevision: { type: "integer" }
         },
-        required: ["mode", "goal"]
+        required: ["goal"]
       }
     },
     {
@@ -82,8 +81,7 @@
       name: "load_circuit",
       title: "Load circuit in CircuitJS1",
       description:
-        "Load a complete CircuitJS export into the visible simulator for a new " +
-        "build or an explicit diagnostic variant. The current circuit is saved " +
+        "Load a complete CircuitJS export into the visible simulator. The current circuit is saved " +
         "as a restorable version by default. " + WORKSPACE_REVISION_HINT,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: {

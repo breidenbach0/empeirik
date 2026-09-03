@@ -80,6 +80,11 @@ check(html.includes('id="circuit-import-input"'), "Import must use a real local 
 check(!html.includes("copy-prompt"), "the redundant prompt card must not remain in the page");
 check(!html.includes("toggle-simulation"), "the outer duplicate simulation button must not remain");
 check(!html.includes("simulator-status"), "the simulator noise strip must not remain");
+check(!html.includes("Agent-enabled CircuitJS1"), "the redundant product tagline must not remain");
+check(!html.includes("mode-switch"), "the workspace must not split building and diagnosis into UI modes");
+check(!html.includes('id="webmcp-badge"'), "WebMCP status must not consume permanent UI space");
+check(!html.includes("session-header"), "the redundant session status intro must not remain");
+check(!html.includes("session-footer"), "licensing and upstream credits belong in project documentation, not the workspace");
 
 /* ---------- package.json scripts ---------- */
 
@@ -138,6 +143,9 @@ check(
   JSON.stringify(webmcp.TOOL_DEFINITIONS.map((d) => d.name)) === JSON.stringify(expectedTools),
   "WebMCP tool names/order do not match the documented list"
 );
+const startSessionDefinition = webmcp.TOOL_DEFINITIONS.find((d) => d.name === "start_session");
+check(!Object.prototype.hasOwnProperty.call(startSessionDefinition.inputSchema.properties, "mode"), "start_session must use one unified workflow");
+check(JSON.stringify(startSessionDefinition.inputSchema.required) === JSON.stringify(["goal"]), "start_session must only require the user's goal");
 for (const def of webmcp.TOOL_DEFINITIONS) {
   check(typeof def.description === "string" && def.description.length > 20, `tool ${def.name} needs a description`);
   check(typeof def.title === "string" && def.title.length > 3, `tool ${def.name} needs a human-readable title`);
@@ -278,14 +286,16 @@ check(engine.state.revision === 11, `expected revision 11 after the walkthrough,
 const mainSrc = readFileSync(resolve(ROOT, "src/main.js"), "utf8");
 check(mainSrc.includes("WorkspaceSession"), "main.js must create the unified workspace session");
 check(mainSrc.includes("circuitjs-frame"), "main.js must mount CircuitJS1 as the primary canvas");
+check(mainSrc.includes('circuitjs/circuitjs.html?lang=en'), "main.js must force the embedded CircuitJS1 UI to English");
 check(mainSrc.includes("root.Empeirik"), "main.js must expose the empeirik browser API");
 check(!mainSrc.includes("DEMO_STEPS"), "main.js must not hard-code the old guided demo");
 
 const uiSrc = readFileSync(resolve(ROOT, "src/ui.js"), "utf8");
 check(uiSrc.includes("createUI"), "ui.js must export createUI");
 check(uiSrc.includes('callHandler("importCircuit"'), "Import must load the selected circuit through the workspace");
+check(!uiSrc.includes("setModeUI") && !uiSrc.includes("WebMCP preview"), "UI code must not retain removed mode or WebMCP status chrome");
 const styles = readFileSync(resolve(ROOT, "src/styles.css"), "utf8");
-check(styles.includes(".session-body") && styles.includes("grid-template-rows: auto minmax(0, 1fr) auto auto"), "session panel must keep the work log in a stable grid row");
+check(styles.includes(".session-body") && styles.includes("grid-template-rows: auto minmax(0, 1fr) auto"), "session panel must keep the work log in a stable grid row");
 check(styles.includes('"activity"') && styles.includes("grid-area: activity"), "hidden session rows must not displace the work-log viewport");
 check(styles.includes(".session-feed") && styles.includes("overflow-y: auto") && styles.includes("mask-image"), "work log must be an internally scrolling masked viewport");
 check(!html.includes("Guided view"), "the duplicate guided canvas must not remain in the page");

@@ -94,14 +94,8 @@
     }
 
     function bindEvents() {
-      el("mode-diagnose").addEventListener("click", function () {
-        callHandler("setMode", "diagnose");
-      });
-      el("mode-build").addEventListener("click", function () {
-        callHandler("setMode", "build");
-      });
       el("new-session").addEventListener("click", function () {
-        callHandler("newSession").then(function () { notify("New session ready"); });
+        callHandler("newSession");
       });
       el("import-circuit").addEventListener("click", function () {
         el("circuit-import-input").click();
@@ -135,67 +129,6 @@
 
     function init() {
       bindEvents();
-    }
-
-    function setModeUI(mode) {
-      var diagnose = mode === "diagnose";
-      el("mode-diagnose").classList.toggle("is-active", diagnose);
-      el("mode-diagnose").setAttribute("aria-pressed", diagnose ? "true" : "false");
-      el("mode-build").classList.toggle("is-active", !diagnose);
-      el("mode-build").setAttribute("aria-pressed", diagnose ? "false" : "true");
-    }
-
-    function statusLabel(status) {
-      return {
-        ready: "Ready",
-        active: "In progress",
-        complete: "Complete",
-        paused: "Paused"
-      }[status] || status;
-    }
-
-    function renderHeader(workspace) {
-      setModeUI(workspace.mode);
-      el("circuit-title").textContent = workspace.circuitName;
-      el("session-status").textContent = statusLabel(workspace.status);
-      el("session-status").className = "session-status status-" + workspace.status;
-
-      if (workspace.status === "ready") {
-        el("session-title").textContent = workspace.mode === "diagnose"
-          ? "Diagnose this circuit"
-          : "Build a circuit";
-        el("session-goal").textContent = workspace.mode === "diagnose"
-          ? "Inspect, simulate, and document findings on the circuit currently open."
-          : "Create and verify the requested circuit directly in CircuitJS1.";
-      } else {
-        el("session-title").textContent = workspace.title;
-        el("session-goal").textContent = workspace.goal;
-      }
-
-      el("workspace-revision").textContent = "REV " + workspace.revision;
-    }
-
-    function renderFacts(workspace, diagnostic) {
-      var performed = diagnostic.measurements.filter(function (m) { return m.performed; }).length;
-      var measurements = workspace.measurements.length + performed;
-      var facts = [];
-      if (measurements) facts.push(measurements + (measurements === 1 ? " reading" : " readings"));
-      if (diagnostic.hypotheses.length) {
-        facts.push(diagnostic.hypotheses.length +
-          (diagnostic.hypotheses.length === 1 ? " working theory" : " working theories"));
-      }
-      if (workspace.versions.length) {
-        facts.push(workspace.versions.length +
-          (workspace.versions.length === 1 ? " saved version" : " saved versions"));
-      }
-      if (diagnostic.repair) {
-        facts.push("repair " + diagnostic.repair.approvalStatus.replace("-", " "));
-      }
-      var target = el("session-facts");
-      target.hidden = facts.length === 0;
-      target.innerHTML = facts.map(function (fact) {
-        return "<span>" + escapeHtml(fact) + "</span>";
-      }).join("");
     }
 
     function renderPending(diagnostic) {
@@ -290,19 +223,10 @@
     function render(payload) {
       var workspace = payload.workspace;
       var diagnostic = payload.diagnostic;
-      renderHeader(workspace);
-      renderFacts(workspace, diagnostic);
+      el("circuit-title").textContent = workspace.circuitName;
+      el("workspace-revision").textContent = "REV " + workspace.revision;
       renderPending(diagnostic);
       renderFeed(workspace, diagnostic);
-    }
-
-    function setWebmcpBadge(registration) {
-      var badge = el("webmcp-badge");
-      badge.textContent = registration.registered ? "WebMCP ready" : "WebMCP preview";
-      badge.className = "connection-badge" + (registration.registered ? " is-connected" : "");
-      badge.title = registration.registered
-        ? registration.count + " agent tools registered"
-        : "The same tools remain available through window.Empeirik.tools.";
     }
 
     function setLastCall(entry) {
@@ -329,7 +253,6 @@
       init: init,
       render: render,
       notify: notify,
-      setWebmcpBadge: setWebmcpBadge,
       setLastCall: setLastCall
     };
   }
