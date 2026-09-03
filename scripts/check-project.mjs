@@ -160,6 +160,7 @@ check(uiSource.includes("renderInvestigation") && uiSource.includes("renderEvide
 const pagesBuild = readFileSync(resolve(ROOT, "scripts/build-pages.mjs"), "utf8");
 check(pagesBuild.includes('"assets"'), "Pages build must publish the favicon asset");
 check(pagesBuild.includes(".nojekyll"), "Pages build must disable Jekyll");
+check(pagesBuild.includes("contentVersion") && pagesBuild.includes("Cache-coherent asset versions"), "Pages build must content-version runtime assets");
 const pagesWorkflow = readFileSync(resolve(ROOT, ".github/workflows/pages.yml"), "utf8");
 for (const action of ["actions/configure-pages@v5", "actions/upload-pages-artifact@v4", "actions/deploy-pages@v4", "npm run build:pages"]) {
   check(pagesWorkflow.includes(action), `Pages workflow is missing ${action}`);
