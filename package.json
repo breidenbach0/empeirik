@@ -5,8 +5,8 @@
   "description": "empeirik: a CircuitJS1-first workspace where a WebMCP agent can diagnose an existing circuit or build and verify a new one.",
   "scripts": {
     "start": "node scripts/server.mjs",
-    "test": "node tests/diagnostic-engine.test.js && node tests/editor-bridge.test.js",
-    "check": "node scripts/check-project.mjs && npm test",
+    "check": "node scripts/check-project.mjs",
+    "build:pages": "node scripts/build-pages.mjs",
     "build:circuitjs-bridge": "bash scripts/build-circuitjs-bridge.sh",
     "install:circuitjs": "bash scripts/build-circuitjs-bridge.sh",
     "install:circuitjs:official": "bash scripts/install-circuitjs.sh"

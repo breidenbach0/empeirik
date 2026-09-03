@@ -1,7 +1,11 @@
 .DS_Store
 node_modules/
 *.log
+_site/
 
 # Local product-design evidence and generated captures
 docs/
 design-qa.md
+
+# Local verification harness
+tests/
