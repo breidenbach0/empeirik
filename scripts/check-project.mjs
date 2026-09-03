@@ -326,7 +326,11 @@ check(!html.includes("workspace-revision") && !html.includes("Latest WebMCP call
 
 const license = readFileSync(resolve(ROOT, "LICENSE"), "utf8");
 check(license.includes("GNU GENERAL PUBLIC LICENSE"), "LICENSE must contain the GPLv2 text");
-check(license.includes("version 2 or (at your option) any later version"), "LICENSE must state GPL-2.0-or-later");
+check(
+  license.includes("51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA") &&
+    license.includes("<signature of Ty Coon>"),
+  "LICENSE must preserve the canonical GPLv2 text"
+);
 const upstream = readFileSync(resolve(ROOT, "UPSTREAM.md"), "utf8");
 check(upstream.includes("Falstad") || upstream.includes("falstad"), "UPSTREAM.md must credit CircuitJS1");
 
