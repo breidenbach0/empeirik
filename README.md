@@ -2,9 +2,10 @@
 
 empeirik is a CircuitJS1-first workspace where a WebMCP agent can inspect,
 build, edit, simulate, and diagnose the same circuit the human sees. There is no
-second schematic: CircuitJS1 remains the source of truth. The session panel pairs
-one chronological human/agent work log with expandable Investigation, Evidence,
-Hypotheses, and Repair benches that summarize the same underlying actions.
+second schematic: CircuitJS1 remains the source of truth. The session panel is a
+five-view accordion: the chronological human/agent Work log opens by default,
+alongside Investigation, Evidence, Hypotheses, and Repair views that summarize
+the same underlying actions.
 There is no Build/Diagnose mode: the user's request determines what the agent
 does in the shared circuit workspace.
 

@@ -311,11 +311,10 @@ button:focus-visible {
 .session-body {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(190px, 1.1fr) minmax(210px, 0.9fr);
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     "pending"
-    "activity"
-    "benches";
+    "panels";
   overflow: hidden;
 }
 
@@ -323,16 +322,7 @@ button:focus-visible {
   grid-area: pending;
 }
 
-.activity-section {
-  grid-area: activity;
-}
-
-.bench-section {
-  grid-area: benches;
-}
-
-.pending-section,
-.activity-section {
+.pending-section {
   padding: 20px;
   border-bottom: 1px solid var(--border);
 }
@@ -394,17 +384,12 @@ button:focus-visible {
   gap: 8px;
 }
 
-.activity-section {
+.panel-stack {
+  grid-area: panels;
   min-height: 0;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  padding: 20px 12px 0 20px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-}
-
-.bench-section {
-  min-height: 0;
-  overflow-y: auto;
   overscroll-behavior: contain;
   border-top: 1px solid var(--charcoal);
   background: var(--cream);
@@ -412,7 +397,16 @@ button:focus-visible {
 }
 
 .bench {
+  flex: 0 0 auto;
+  min-height: 0;
   border-bottom: 1px solid var(--charcoal);
+}
+
+.bench[open] {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .bench summary {
@@ -444,7 +438,7 @@ button:focus-visible {
 }
 
 .bench-content {
-  max-height: 200px;
+  min-height: 0;
   padding: 0 18px 12px 35px;
   overflow-y: auto;
   scrollbar-color: var(--charcoal) transparent;
@@ -501,8 +495,8 @@ button:focus-visible {
 
 .session-feed {
   min-height: 0;
-  margin-top: 8px;
-  padding: 14px 8px 18px 0;
+  margin: 0;
+  padding: 14px 20px 18px 18px;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-color: var(--border-strong) transparent;

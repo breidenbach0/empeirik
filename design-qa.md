@@ -23,9 +23,9 @@ No actionable P0, P1, or P2 findings remain.
 - Fonts and typography: the existing Inter/system stack, weights, sizes, and button
   typography were preserved. New bench and picker copy follows the existing compact
   UI hierarchy without clipping or unintended wrapping at the tested viewport.
-- Spacing and layout: CircuitJS1 remains the dominant surface. The fixed Work log and
-  reserved accordion area do not move when a bench opens. One bench opens at a time,
-  keeping the lower rail readable.
+- Spacing and layout: CircuitJS1 remains the dominant surface. Work log and the four
+  focused views share one accordion, with Work log open by default. One view opens at
+  a time and fills the available rail without moving the simulator.
 - Colors and tokens: the outer workspace contains exactly the sampled cream `#f7f3eb`,
   charcoal `#3f3d3a`, and orange `#d8794d`. Charcoal-on-cream text contrast is 9.78:1;
   orange is reserved for focus and structural accents. CircuitJS1 retains its native
@@ -36,7 +36,7 @@ No actionable P0, P1, or P2 findings remain.
   uses it as color direction, not as a visible lockup.
 - Copy and content: empty states explain what each bench will contain. Export choices
   clearly distinguish re-importable circuit data from visual artifacts.
-- Interactions and accessibility: all four summaries are native keyboard-accessible
+- Interactions and accessibility: all five summaries are native keyboard-accessible
   disclosure controls; opening one closes the others. The export card exposes a named
   dialog, moves focus into its first choice, closes on outside interaction or Escape,
   and reports success/errors through the existing live status region.
@@ -52,13 +52,12 @@ No actionable P0, P1, or P2 findings remain.
    all small text to charcoal/cream pairs and reserved orange for borders, markers,
    focus, and timeline accents. The post-fix default and export captures show the result.
 2. First interaction pass found a P2 density issue: several open benches could make the
-   lower rail unnecessarily long. The fix made the four benches an exclusive accordion.
-   The populated-bench capture confirms the selected content remains visible while the
-   Work log stays fixed.
+   lower rail unnecessarily long. The fix first made the four focused views exclusive,
+   then folded Work log into the same five-view accordion for one consistent interaction.
 
 ## Primary interactions tested
 
-- Opened every diagnostic bench and confirmed exclusive expansion.
+- Opened Work log and every diagnostic view and confirmed exclusive expansion.
 - Populated Investigation and Evidence from live WebMCP inspection and measurement.
 - Completed the full example workflow through verified repair and inspected all four
   populated bench renderers.

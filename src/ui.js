@@ -453,6 +453,7 @@
       events.sort(function (a, b) {
         return new Date(a.at).getTime() - new Date(b.at).getTime();
       });
+      el("work-log-count").textContent = String(events.length);
       feed.innerHTML = events.map(function (event) {
         var actor = event.actor === "human"
           ? "You"

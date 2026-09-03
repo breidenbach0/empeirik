@@ -98,14 +98,15 @@ npm start</code></pre>
           <div id="pending-actions"></div>
         </section>
 
-        <section class="activity-section" aria-labelledby="activity-title">
-          <div class="section-label-row">
-            <h3 id="activity-title">Work log</h3>
-          </div>
-          <div id="session-feed" class="session-feed"></div>
-        </section>
+        <section class="panel-stack" aria-label="Session workspace">
+          <details class="bench activity-section" name="session-bench" data-bench="work-log" open>
+            <summary>
+              <span>Work log</span>
+              <span id="work-log-count" class="bench-count">0</span>
+            </summary>
+            <div id="session-feed" class="session-feed bench-content"></div>
+          </details>
 
-        <section class="bench-section" aria-label="Investigation workspace">
           <details class="bench" name="session-bench" data-bench="investigation">
             <summary>
               <span>Investigation</span>

@@ -81,6 +81,8 @@ check(html.includes(".circuitjs,.txt,.xml"), "Import must advertise the three su
 for (const benchId of ["investigation-bench", "evidence-bench", "hypothesis-bench", "repair-bench"]) {
   check(html.includes(`id="${benchId}"`), `workspace must expose ${benchId}`);
 }
+check(html.includes('data-bench="work-log"') && html.includes('id="work-log-count"'), "Work log must be an expandable session bench with an event count");
+check(/data-bench="work-log" open/.test(html), "Work log must be open by default");
 for (const format of ["circuitjs", "text", "svg", "png"]) {
   check(html.includes(`data-export-format="${format}"`), `Export picker must expose ${format}`);
 }
@@ -309,10 +311,10 @@ check(!uiSrc.includes("setLastCall") && !uiSrc.includes("workspace-revision"), "
 check(uiSrc.includes("renderInvestigation") && uiSrc.includes("renderEvidence") && uiSrc.includes("renderHypotheses") && uiSrc.includes("renderRepairBench"), "UI must render all four expandable benches");
 check(uiSrc.includes("svgToPngBlob") && uiSrc.includes("downloadBlob"), "UI must provide downloadable image and circuit exports");
 const styles = readFileSync(resolve(ROOT, "src/styles.css"), "utf8");
-check(styles.includes(".session-body") && styles.includes("minmax(190px, 1.1fr) minmax(210px, 0.9fr)"), "session panel must keep fixed work-log and bench rows");
-check(styles.includes('"activity"') && styles.includes("grid-area: activity"), "hidden session rows must not displace the work-log viewport");
+check(styles.includes(".session-body") && styles.includes('"panels"'), "session panel must reserve its flexible row for the accordion");
+check(styles.includes(".panel-stack") && styles.includes("flex-direction: column"), "all session views must share one vertical accordion");
 check(styles.includes(".session-feed") && styles.includes("overflow-y: auto") && styles.includes("mask-image"), "work log must be an internally scrolling masked viewport");
-check(styles.includes(".bench-section") && styles.includes(".bench summary"), "diagnostic benches must be expandable beneath the work log");
+check(styles.includes(".bench[open]") && styles.includes(".bench summary"), "all session views must be expandable with one open view filling the rail");
 const palette = Array.from(new Set((styles.match(/#[0-9a-fA-F]{6}/g) || []).map((color) => color.toLowerCase()))).sort();
 check(JSON.stringify(palette) === JSON.stringify(["#3f3d3a", "#d8794d", "#f7f3eb"].sort()), "outer workspace must use only the logo's charcoal, orange, and cream colors");
 check(!html.includes("Guided view"), "the duplicate guided canvas must not remain in the page");
