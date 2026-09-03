@@ -1,9 +1,8 @@
 /*
  * empeirik single-workspace UI.
  *
- * CircuitJS1 is the only circuit canvas. Diagnostic facts, successful
- * workspace changes, and human approvals share one chronological work log;
- * expandable benches provide focused views of that same session data.
+ * CircuitJS1 is the only circuit canvas. The right rail renders empty states
+ * until real agent or human activity fills the shared workspace session.
  */
 (function (root, factory) {
   var api = factory(root);
@@ -34,10 +33,29 @@
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
+  function actorLabel(actor) {
+    return actor === "human" ? "You" : actor === "agent" ? "Agent" : "System";
+  }
+
+  function formatReading(value) {
+    var number = Number(value);
+    if (!isFinite(number)) return String(value === null || typeof value === "undefined" ? "" : value);
+    var digits = Math.abs(number) < 0.1 ? 3 : 2;
+    return number.toFixed(digits).replace(/(\.\d*?[1-9])0+$|\.0+$/, "$1");
+  }
+
   function createUI(options) {
     options = options || {};
     var handlers = options.handlers || {};
     var toastTimer = null;
+
+    function notify(message, tone) {
+      var toast = el("toast");
+      toast.textContent = message;
+      toast.className = "toast is-visible" + (tone === "error" ? " is-error" : "");
+      if (toastTimer) root.clearTimeout(toastTimer);
+      toastTimer = root.setTimeout(function () { toast.className = "toast"; }, 2600);
+    }
 
     function callHandler(name) {
       var args = Array.prototype.slice.call(arguments, 1);
@@ -45,24 +63,12 @@
       try {
         return Promise.resolve(handlers[name].apply(null, args)).catch(function (error) {
           notify(error && error.message ? error.message : String(error), "error");
-          if (error && typeof error === "object") error.empeirikNotified = true;
           throw error;
         });
       } catch (error) {
         notify(error && error.message ? error.message : String(error), "error");
-        if (error && typeof error === "object") error.empeirikNotified = true;
         return Promise.reject(error);
       }
-    }
-
-    function notify(message, tone) {
-      var toast = el("toast");
-      toast.textContent = message;
-      toast.className = "toast is-visible" + (tone === "error" ? " is-error" : "");
-      if (toastTimer) root.clearTimeout(toastTimer);
-      toastTimer = root.setTimeout(function () {
-        toast.className = "toast";
-      }, 2600);
     }
 
     function bindEvents() {
@@ -77,251 +83,183 @@
       }
     }
 
-    function init() {
-      bindEvents();
-    }
-
-    function renderPending(diagnostic) {
-      var tasks = diagnostic.humanTasks.filter(function (task) {
-        return task.status === "pending";
-      });
+    function renderPending(workspace) {
+      var tasks = workspace.humanTasks.filter(function (task) { return task.status === "pending"; });
       var section = el("pending-section");
       section.hidden = tasks.length === 0;
       el("pending-count").textContent = String(tasks.length);
       el("pending-actions").innerHTML = tasks.map(function (task) {
-        var buttons = task.type === "measurement"
-          ? '<button class="button button-solid" data-action="measure" data-task="' +
-            escapeHtml(task.id) + '" type="button">Perform measurement</button>'
-          : '<div class="approval-actions">' +
-            '<button class="button button-solid" data-action="approve" data-task="' +
-            escapeHtml(task.id) + '" type="button">Approve simulation</button>' +
-            '<button class="button button-quiet" data-action="decline" data-task="' +
-            escapeHtml(task.id) + '" type="button">Decline</button></div>';
         return '<article class="pending-card">' +
           '<span class="pending-label">Human decision</span>' +
-          '<p>' + escapeHtml(task.instruction) + "</p>" + buttons + "</article>";
+          '<p>' + escapeHtml(task.instruction) + '</p>' +
+          '<div class="approval-actions">' +
+            '<button class="button button-solid" data-action="approve" data-task="' + escapeHtml(task.id) + '" type="button">Approve simulation</button>' +
+            '<button class="button button-quiet" data-action="decline" data-task="' + escapeHtml(task.id) + '" type="button">Decline</button>' +
+          '</div>' +
+        '</article>';
       }).join("");
 
       var buttons = el("pending-actions").querySelectorAll("button[data-action]");
       for (var i = 0; i < buttons.length; i++) {
         buttons[i].addEventListener("click", function (event) {
           var button = event.currentTarget;
-          var action = button.getAttribute("data-action");
-          var taskId = button.getAttribute("data-task");
           button.disabled = true;
-          callHandler(action === "measure"
-            ? "performMeasurement"
-            : action === "approve"
-              ? "approveRepair"
-              : "declineRepair", taskId);
+          callHandler(
+            button.getAttribute("data-action") === "approve" ? "approveRepair" : "declineRepair",
+            button.getAttribute("data-task")
+          );
         });
       }
     }
 
-    function humanActor(actor) {
-      return actor === "human" ? "You" : actor === "agent" ? "Agent" : "System";
+    function benchItem(item, right, title, detail, secondary) {
+      return '<article class="bench-item">' +
+        '<div class="bench-meta"><span>' + escapeHtml(item) + '</span><span>' + escapeHtml(right || "") + '</span></div>' +
+        '<h4>' + escapeHtml(title) + '</h4>' +
+        (detail ? '<p>' + escapeHtml(detail) + '</p>' : '') +
+        (secondary ? '<p class="bench-secondary">' + escapeHtml(secondary) + '</p>' : '') +
+      '</article>';
     }
 
-    function formatReading(value) {
-      var number = Number(value);
-      if (!isFinite(number)) return String(value || "");
-      var digits = Math.abs(number) < 0.1 ? 3 : 2;
-      return number.toFixed(digits).replace(/(\.\d*?[1-9])0+$|\.0+$/, "$1");
-    }
-
-    function renderInvestigation(workspace, diagnostic) {
-      var allowed = {
-        "circuit-inspected": true,
-        "component-inspected": true,
-        "path-traced": true,
-        question: true,
-        "next-step": true
-      };
-      var events = workspace.activity.concat(diagnostic.timeline).filter(function (event) {
-        return event.revision > 0 && allowed[event.kind];
-      }).sort(function (a, b) {
-        return new Date(a.at).getTime() - new Date(b.at).getTime();
+    function renderInvestigation(workspace) {
+      var entries = workspace.investigations.slice();
+      workspace.activity.filter(function (event) {
+        return event.kind === "circuit-inspected";
+      }).forEach(function (event) {
+        entries.push({
+          id: "Inspection",
+          kind: "inspection",
+          title: event.title,
+          detail: event.detail,
+          actor: event.actor,
+          at: event.at
+        });
       });
-      el("investigation-count").textContent = String(events.length);
-      el("investigation-bench").innerHTML = events.length ? events.map(function (event) {
-        return '<article class="bench-item">' +
-          '<div class="bench-meta"><span>' + escapeHtml(humanActor(event.actor)) +
-          '</span><time>' + escapeHtml(formatTime(event.at)) + '</time></div>' +
-          '<h4>' + escapeHtml(event.title) + '</h4>' +
-          (event.detail ? '<p>' + escapeHtml(event.detail) + '</p>' : '') +
-        '</article>';
+      entries.sort(function (a, b) { return new Date(a.at).getTime() - new Date(b.at).getTime(); });
+      el("investigation-count").textContent = String(entries.length);
+      el("investigation-bench").innerHTML = entries.length ? entries.map(function (entry) {
+        return benchItem(entry.id, entry.kind, entry.title, entry.detail, actorLabel(entry.actor) + " · " + formatTime(entry.at));
       }).join("") : '<p class="bench-empty">Component inspections, circuit reads, and signal traces will collect here.</p>';
     }
 
-    function renderEvidence(workspace, diagnostic) {
-      var evidence = [];
-      for (var i = 0; i < workspace.measurements.length; i++) {
-        var simulated = workspace.measurements[i];
-        evidence.push({
-          id: simulated.id,
-          title: simulated.node,
-          value: formatReading(simulated.value) + " " + simulated.unit,
-          status: "Simulation",
-          detail: simulated.reason || "Read from the active CircuitJS1 simulation."
-        });
-      }
-      for (var j = 0; j < diagnostic.measurements.length; j++) {
-        var measured = diagnostic.measurements[j];
-        var expected = measured.expectedRange
-          ? "Expected " + formatReading(measured.expectedRange.min) + "–" +
-            formatReading(measured.expectedRange.max) + " " + measured.expectedRange.unit + "."
-          : measured.rationale;
-        evidence.push({
-          id: measured.id,
-          title: measured.label,
-          value: measured.performed ? formatReading(measured.value) + " " + measured.unit : "Awaiting measurement",
-          status: measured.performed ? measured.classification : "Requested",
-          detail: expected || "Waiting for the human measurement."
-        });
-      }
-      var findingEvents = workspace.activity.filter(function (event) {
-        return event.kind === "finding";
+    function renderEvidence(workspace) {
+      var entries = workspace.evidence.map(function (item) {
+        var value = typeof item.value === "undefined" ? "" : formatReading(item.value) + (item.unit ? " " + item.unit : "");
+        return {
+          id: item.id,
+          status: item.source,
+          title: item.title + (value ? " — " + value : ""),
+          detail: item.detail,
+          actor: item.actor,
+          at: item.at
+        };
       });
-      for (var k = 0; k < findingEvents.length; k++) {
-        evidence.push({
-          id: "Finding",
-          title: findingEvents[k].title,
-          value: "Recorded",
-          status: humanActor(findingEvents[k].actor),
-          detail: findingEvents[k].detail
+      workspace.measurements.forEach(function (measurement) {
+        entries.push({
+          id: measurement.id,
+          status: "simulation",
+          title: measurement.node + " — " + formatReading(measurement.value) + " " + measurement.unit,
+          detail: measurement.reason || "Read from CircuitJS1.",
+          actor: measurement.actor,
+          at: measurement.at
         });
-      }
-      el("evidence-count").textContent = String(evidence.length);
-      el("evidence-bench").innerHTML = evidence.length ? evidence.map(function (item) {
-        return '<article class="bench-item">' +
-          '<div class="bench-meta"><span>' + escapeHtml(item.id) + '</span><span>' +
-            escapeHtml(item.status) + '</span></div>' +
-          '<h4>' + escapeHtml(item.title) + '<span class="bench-value">' +
-            escapeHtml(item.value) + '</span></h4>' +
-          (item.detail ? '<p>' + escapeHtml(item.detail) + '</p>' : '') +
-        '</article>';
+      });
+      entries.sort(function (a, b) { return new Date(a.at).getTime() - new Date(b.at).getTime(); });
+      el("evidence-count").textContent = String(entries.length);
+      el("evidence-bench").innerHTML = entries.length ? entries.map(function (entry) {
+        return benchItem(entry.id, entry.status, entry.title, entry.detail, actorLabel(entry.actor) + " · " + formatTime(entry.at));
       }).join("") : '<p class="bench-empty">Measurements and concrete findings will collect here.</p>';
     }
 
-    function renderHypotheses(diagnostic) {
-      var hypotheses = diagnostic.hypotheses || [];
+    function renderHypotheses(workspace) {
+      var hypotheses = workspace.hypotheses;
       el("hypothesis-count").textContent = String(hypotheses.length);
       el("hypothesis-bench").innerHTML = hypotheses.length ? hypotheses.map(function (hypothesis) {
         var alternatives = (hypothesis.alternatives || []).map(function (alternative) {
           return alternative.label + " (" + alternative.status + ")";
         });
-        return '<article class="bench-item">' +
-          '<div class="bench-meta"><span>' + escapeHtml(hypothesis.id) + '</span><span>' +
-            escapeHtml(hypothesis.status) + '</span></div>' +
-          '<h4>' + escapeHtml(hypothesis.statement) + '</h4>' +
-          '<p>Evidence: ' + escapeHtml((hypothesis.evidence || []).join(", ") || "none") + '</p>' +
-          (alternatives.length ? '<p class="bench-secondary">Alternatives: ' +
-            escapeHtml(alternatives.join(" · ")) + '</p>' : '') +
-          (hypothesis.note ? '<p class="bench-secondary">' + escapeHtml(hypothesis.note) + '</p>' : '') +
-        '</article>';
+        return benchItem(
+          hypothesis.id,
+          hypothesis.status,
+          hypothesis.statement,
+          "Evidence: " + hypothesis.evidenceIds.join(", "),
+          alternatives.length ? "Alternatives: " + alternatives.join(" · ") : hypothesis.note
+        );
       }).join("") : '<p class="bench-empty">Evidence-backed explanations will collect here without hiding alternatives.</p>';
     }
 
-    function renderRepairBench(diagnostic) {
-      var repair = diagnostic.repair;
-      var verification = diagnostic.verification;
-      var state = verification && verification.status === "passed"
-        ? "Verified"
-        : repair ? repair.approvalStatus || "Staged" : "Empty";
-      el("repair-state").textContent = state;
-      if (!repair) {
-        el("repair-bench").innerHTML = '<p class="bench-empty">A staged change, its evidence, approval, and simulation result will appear here.</p>';
-        return;
-      }
-      var html = '<article class="bench-item">' +
-        '<div class="bench-meta"><span>' + escapeHtml(repair.id) + '</span><span>' +
-          escapeHtml(repair.approvalStatus) + '</span></div>' +
-        '<h4>' + escapeHtml(repair.action + " " + repair.componentLabel) + '</h4>' +
-        (repair.newPart ? '<p>' + escapeHtml(repair.newPart) + '</p>' : '') +
-        '<p class="bench-secondary">' + escapeHtml(repair.rationale) + '</p>' +
-        '<p class="bench-secondary">Evidence: ' + escapeHtml((repair.evidence || []).join(", ")) +
-          ' · original branch ' + escapeHtml(diagnostic.branches.faulted.preserved ? "preserved" : "not preserved") + '</p>' +
-      '</article>';
-      if (verification) {
-        var checks = verification.checks || [];
-        var passed = checks.filter(function (check) { return check.passed; }).length;
-        html += '<article class="bench-item">' +
-          '<div class="bench-meta"><span>Verification</span><span>' +
-            escapeHtml(verification.scope) + '</span></div>' +
-          '<h4>Simulation contract ' + escapeHtml(verification.status) + '</h4>' +
-          (checks.length ? '<p>' + escapeHtml(passed + "/" + checks.length + " checks passed.") + '</p>' : '') +
-          (verification.note ? '<p class="bench-secondary">' + escapeHtml(verification.note) + '</p>' : '') +
-        '</article>';
-      }
-      el("repair-bench").innerHTML = html;
+    function renderRepairBench(workspace) {
+      var repairs = workspace.repairs;
+      el("repair-state").textContent = String(repairs.length);
+      el("repair-bench").innerHTML = repairs.length ? repairs.map(function (repair) {
+        var detail = repair.rationale + " Evidence: " + repair.evidenceIds.join(", ") + ".";
+        var result = repair.result ? repair.result.summary :
+          repair.planKind === "physical-only" ? "Physical repair only; no simulation plan staged." :
+            repair.actionCount ? repair.actionCount + " CircuitJS1 actions staged." : "Circuit replacement staged.";
+        return benchItem(repair.id, repair.status, repair.title, detail, "Approval: " + repair.approvalStatus + " · " + result);
+      }).join("") : '<p class="bench-empty">A staged change, its evidence, approval, and result will appear here.</p>';
     }
 
     function eventKindLabel(kind) {
       var labels = {
         "node-measured": "SIMULATION",
-        "measurement-performed": "HARDWARE CHECK",
-        "measurement-requested": "REQUEST",
+        "evidence-recorded": "EVIDENCE",
+        "investigation-recorded": "INVESTIGATION",
+        "hypothesis-proposed": "HYPOTHESIS",
+        "hypothesis-updated": "HYPOTHESIS",
+        "repair-staged": "PROPOSED CHANGE",
+        "repair-approval-requested": "APPROVAL",
+        "repair-approved": "APPROVED",
+        "repair-declined": "DECLINED",
+        "repair-applied": "SIMULATION",
+        "repair-result-recorded": "RESULT",
         finding: "FINDING",
         decision: "DECISION",
         question: "QUESTION",
         "next-step": "NEXT STEP",
         "circuit-loaded": "CIRCUIT",
-        "version-restored": "CIRCUIT",
-        "repair-staged": "PROPOSED CHANGE",
-        "simulation-approval-requested": "APPROVAL",
-        "repair-simulated": "SIMULATION",
-        "verified-in-simulation": "VERIFIED"
+        "version-restored": "CIRCUIT"
       };
       return labels[kind] || String(kind || "update").replace(/-/g, " ").toUpperCase();
     }
 
-    function renderFeed(workspace, diagnostic) {
+    function renderFeed(workspace) {
       var feed = el("session-feed");
       var stayAtLatest = feed.childElementCount === 0 ||
         feed.scrollHeight - feed.scrollTop - feed.clientHeight < 48;
-      var events = workspace.activity.slice();
-      for (var i = 0; i < diagnostic.timeline.length; i++) {
-        if (diagnostic.timeline[i].revision > 0) events.push(diagnostic.timeline[i]);
-      }
-      events.sort(function (a, b) {
+      var events = workspace.activity.slice().sort(function (a, b) {
         return new Date(a.at).getTime() - new Date(b.at).getTime();
       });
       el("work-log-count").textContent = String(events.length);
-      feed.innerHTML = events.map(function (event) {
-        var actor = event.actor === "human"
-          ? "You"
-          : event.actor === "agent"
-            ? "Agent"
-            : "System";
+      feed.innerHTML = events.length ? events.map(function (event) {
         return '<article class="feed-event actor-' + escapeHtml(event.actor) + '">' +
           '<div class="feed-rail"><span></span></div>' +
           '<div class="feed-body">' +
             '<div class="feed-meta">' +
-              '<span class="feed-actor">' + actor + "</span>" +
-              '<span class="feed-kind">' + escapeHtml(eventKindLabel(event.kind)) + "</span>" +
-              '<time>' + escapeHtml(formatTime(event.at)) + "</time>" +
-            "</div>" +
-            '<h4>' + escapeHtml(event.title) + "</h4>" +
-            (event.detail ? '<p>' + escapeHtml(event.detail) + "</p>" : "") +
-          "</div>" +
-        "</article>";
-      }).join("");
+              '<span class="feed-actor">' + escapeHtml(actorLabel(event.actor)) + '</span>' +
+              '<span class="feed-kind">' + escapeHtml(eventKindLabel(event.kind)) + '</span>' +
+              '<time>' + escapeHtml(formatTime(event.at)) + '</time>' +
+            '</div>' +
+            '<h4>' + escapeHtml(event.title) + '</h4>' +
+            (event.detail ? '<p>' + escapeHtml(event.detail) + '</p>' : '') +
+          '</div>' +
+        '</article>';
+      }).join("") : '<p class="bench-empty work-log-empty">Circuit changes, measurements, and decisions will appear here.</p>';
       if (stayAtLatest) feed.scrollTop = feed.scrollHeight;
     }
 
     function render(payload) {
       var workspace = payload.workspace;
-      var diagnostic = payload.diagnostic;
-      renderPending(diagnostic);
-      renderFeed(workspace, diagnostic);
-      renderInvestigation(workspace, diagnostic);
-      renderEvidence(workspace, diagnostic);
-      renderHypotheses(diagnostic);
-      renderRepairBench(diagnostic);
+      renderPending(workspace);
+      renderFeed(workspace);
+      renderInvestigation(workspace);
+      renderEvidence(workspace);
+      renderHypotheses(workspace);
+      renderRepairBench(workspace);
     }
 
     return {
-      init: init,
+      init: function () { bindEvents(); },
       render: render,
       notify: notify
     };

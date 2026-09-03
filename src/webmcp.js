@@ -1,13 +1,13 @@
 /*
  * WebMCP surface.
  *
- * Defines empeirik's circuit-workspace and scenario-diagnostic tools and
+ * Defines empeirik's circuit-workspace, native editor, and diagnostic tools and
  * registers them through
  * document.modelContext.registerTool (the WebMCP imperative API) when the
  * browser supports it. When it does not, the same handlers stay available on
  * window.Empeirik.tools so the workflow is testable in any browser.
  *
- * Tool handlers are the only path agent actions take into the engine, keeping
+ * Tool handlers are the only path agent actions take into the workspace, keeping
  * the visible circuit and work log aligned with WebMCP actions.
  *
  * This module splits cleanly into data (TOOL_DEFINITIONS, loadable without
@@ -23,10 +23,6 @@
   root.EmpeirikModules.webmcp = api;
 })(typeof self !== "undefined" ? self : globalThis, function (root) {
   "use strict";
-
-  var REVISION_HINT =
-    "Include basedOnRevision with the revision you last read; actions " +
-    "based on a stale revision are rejected.";
 
   var WORKSPACE_REVISION_HINT =
     "Include basedOnRevision from get_workspace when changing the workspace; " +
@@ -117,8 +113,8 @@
       title: "Measure labeled node",
       description:
         "Use the CircuitJS1 bridge to read the voltage of a labeled node in " +
-        "the active simulation. This is the fast simulation shortcut; use " +
-        "request_measurement instead for a real human-performed board check. " +
+        "the active simulation. Record user-reported physical readings with " +
+        "record_evidence instead. " +
         WORKSPACE_REVISION_HINT,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: {
@@ -484,8 +480,9 @@
         "update-adjustable, remove-adjustable, remove, select, command, option, " +
         "ui-control, view, scope, reset-simulation, and run. Add and split-wire actions may assign " +
         "a ref; later actions in the same batch may use elementRef, targetRef, or " +
-        "elementRefs. If any action fails, the exact pre-batch circuit and run state " +
-        "are restored. " + WORKSPACE_REVISION_HINT,
+        "elementRefs. The complete batch is one native CircuitJS1 Undo step; if any " +
+        "action fails, its circuit, run state, and undo history are restored. " +
+        WORKSPACE_REVISION_HINT,
       annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
       inputSchema: {
         type: "object",
@@ -556,126 +553,83 @@
     }
   ];
 
-  var DIAGNOSTIC_TOOL_DEFINITIONS = [
+  var WORKFLOW_TOOL_DEFINITIONS = [
     {
-      name: "get_diagnostic_state",
-      title: "Read example diagnosis",
+      name: "record_investigation",
+      title: "Record investigation step",
       description:
-        "Bundled environmental-controller example only. Read its revision, phase, " +
-        "measurements (readings appear only after the human performs them), " +
-        "hypotheses, staged repair, verification, pending human tasks, and " +
-        "audit timeline. Use get_workspace first for every session. " + REVISION_HINT,
-      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-      inputSchema: {
-        type: "object",
-        properties: {
-          basedOnRevision: { type: "integer", description: "Revision you last read (optional sanity check)" }
-        }
-      }
-    },
-    {
-      name: "inspect_component",
-      title: "Inspect example component",
-      description:
-        "Bundled environmental-controller example only. Inspect a board component: role, spec, expected behavior, visual " +
-        "inspection notes, and any collected evidence touching it. Does not " +
-        "reveal hidden faults. " + REVISION_HINT,
+        "Record what is being inspected, traced, questioned, or checked next. " +
+        "The item appears in Investigation and the Work log. " + WORKSPACE_REVISION_HINT,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: {
         type: "object",
         properties: {
-          componentId: { type: "string", description: "Designator or id, e.g. 'c7' or 'C7'" },
+          kind: { type: "string", enum: ["inspection", "trace", "question", "next-step"] },
+          title: { type: "string" }, detail: { type: "string" }, subject: { type: "string" },
           basedOnRevision: { type: "integer" }
         },
-        required: ["componentId"]
+        required: ["kind", "title", "detail"]
       }
     },
     {
-      name: "trace_signal_path",
-      title: "Trace example signal path",
+      name: "record_evidence",
+      title: "Record diagnostic evidence",
       description:
-        "Bundled environmental-controller example only. Trace a signal path on the board (currently '3v3' supply " +
-        "distribution and 'reset' release path) step by step. " +
-        REVISION_HINT,
+        "Record a concrete observation from simulation, hardware, the user, " +
+        "documentation, or a calculation. Returns an evidence ID for hypotheses and repairs. " +
+        WORKSPACE_REVISION_HINT,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: {
         type: "object",
         properties: {
-          netId: { type: "string", enum: ["3v3", "reset"] },
+          title: { type: "string" }, detail: { type: "string" },
+          source: { type: "string", enum: ["simulation", "hardware", "user", "documentation", "calculation"] },
+          value: {}, unit: { type: "string" }, subject: { type: "string" },
           basedOnRevision: { type: "integer" }
         },
-        required: ["netId"]
-      }
-    },
-    {
-      name: "request_measurement",
-      title: "Request human measurement",
-      description:
-        "Bundled environmental-controller example only. Ask the human to perform a measurement at a test point. Creates a " +
-        "visible human task and does NOT return the reading: only the human " +
-        "can perform a measurement. Explain why the measurement matters in " +
-        "the rationale. " + REVISION_HINT,
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-      inputSchema: {
-        type: "object",
-        properties: {
-          testPointId: { type: "string", enum: ["tp-3v3", "tp-reset"] },
-          measurementType: { type: "string", enum: ["dc_voltage"] },
-          rationale: { type: "string", description: "Why this measurement matters now" },
-          basedOnRevision: { type: "integer" }
-        },
-        required: ["testPointId"]
+        required: ["title", "detail", "source"]
       }
     },
     {
       name: "propose_hypothesis",
       title: "Propose diagnostic hypothesis",
       description:
-        "Bundled environmental-controller example only. Propose a cause hypothesis. Must cite at least one existing, " +
-        "performed measurement ID and stays explicitly provisional. List " +
-        "alternative explanations to keep the search honest. " +
-        REVISION_HINT,
+        "Propose a provisional explanation linked to existing evidence IDs and keep " +
+        "plausible alternatives visible. " + WORKSPACE_REVISION_HINT,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: {
         type: "object",
         properties: {
           statement: { type: "string" },
-          evidence: { type: "array", items: { type: "string" }, description: "Measurement IDs, e.g. ['m1','m2']" },
+          evidenceIds: { type: "array", minItems: 1, items: { type: "string" } },
           alternatives: {
             type: "array",
-            description: "Alternative causes considered",
-            items: { type: "object", properties: { label: { type: "string" } }, required: ["label"] }
+            items: {
+              anyOf: [
+                { type: "string" },
+                { type: "object", properties: { label: { type: "string" }, status: { type: "string" } }, required: ["label"] }
+              ]
+            }
           },
-          basedOnRevision: { type: "integer" }
+          note: { type: "string" }, basedOnRevision: { type: "integer" }
         },
-        required: ["statement", "evidence"]
+        required: ["statement", "evidenceIds"]
       }
     },
     {
       name: "update_hypothesis",
       title: "Update diagnostic hypothesis",
       description:
-        "Bundled environmental-controller example only. Update your own hypothesis: mark it rejected, refine alternatives " +
-        "(untested/excluded), or add notes. 'confirmed-in-simulation' can " +
-        "only be set by a passing verification. " + REVISION_HINT,
+        "Refine, support, reject, or annotate an existing hypothesis as evidence changes. " +
+        WORKSPACE_REVISION_HINT,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: {
         type: "object",
         properties: {
-          hypothesisId: { type: "string" },
-          status: { type: "string", enum: ["provisional", "rejected", "confirmed-in-simulation"] },
-          alternatives: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                label: { type: "string" },
-                status: { type: "string", enum: ["untested", "excluded"] }
-              },
-              required: ["label"]
-            }
-          },
-          note: { type: "string" },
+          hypothesisId: { type: "string" }, statement: { type: "string" },
+          status: { type: "string", enum: ["provisional", "supported", "rejected", "verified-in-simulation"] },
+          evidenceIds: { type: "array", minItems: 1, items: { type: "string" } },
+          alternatives: { type: "array", items: {} }, note: { type: "string" },
           basedOnRevision: { type: "integer" }
         },
         required: ["hypothesisId"]
@@ -683,69 +637,80 @@
     },
     {
       name: "stage_repair",
-      title: "Stage example repair",
+      title: "Stage repair",
       description:
-        "Bundled environmental-controller example only. Stage a repair on the original faulted branch. Requires a " +
-        "rationale and at least two performed measurements as evidence. " +
-        "Staging does not simulate anything and the faulted branch stays " +
-        "preserved. " + REVISION_HINT,
+        "Stage an evidence-linked repair without changing the circuit. Optionally include " +
+        "up to 100 native editor actions or one complete CircuitJS export for later approved simulation. " +
+        WORKSPACE_REVISION_HINT,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: {
         type: "object",
         properties: {
-          componentId: { type: "string" },
-          action: { type: "string", enum: ["replace", "reflow", "clean", "rework"] },
-          newPart: { type: "string" },
-          rationale: { type: "string" },
-          evidence: { type: "array", items: { type: "string" } },
+          title: { type: "string" }, rationale: { type: "string" },
+          evidenceIds: { type: "array", minItems: 1, items: { type: "string" } },
           hypothesisId: { type: "string" },
-          basedOnRevision: { type: "integer" }
+          actions: { type: "array", minItems: 1, maxItems: 100, items: { type: "object" } },
+          circuitText: { type: "string" }, basedOnRevision: { type: "integer" }
         },
-        required: ["componentId", "rationale", "evidence"]
+        required: ["title", "rationale", "evidenceIds"]
       }
     },
     {
-      name: "request_repair_simulation",
-      title: "Request repair simulation",
+      name: "request_repair_approval",
+      title: "Request repair approval",
       description:
-        "Bundled environmental-controller example only. Ask the human for permission to simulate the staged repair on a " +
-        "separate branch. Nothing is simulated until the human approves. " +
-        REVISION_HINT,
+        "Ask the human to approve applying a staged repair in CircuitJS1. The repair " +
+        "cannot be applied through apply_staged_repair until approval is explicit. " +
+        WORKSPACE_REVISION_HINT,
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+      inputSchema: {
+        type: "object",
+        properties: {
+          repairId: { type: "string" }, instruction: { type: "string" },
+          basedOnRevision: { type: "integer" }
+        },
+        required: ["repairId"]
+      }
+    },
+    {
+      name: "apply_staged_repair",
+      title: "Apply approved repair",
+      description:
+        "Apply a human-approved staged repair atomically in CircuitJS1. This rejects " +
+        "unapproved repairs and never treats simulation as proof of physical hardware. " +
+        WORKSPACE_REVISION_HINT,
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false },
+      inputSchema: {
+        type: "object",
+        properties: { repairId: { type: "string" }, basedOnRevision: { type: "integer" } },
+        required: ["repairId"]
+      }
+    },
+    {
+      name: "record_repair_result",
+      title: "Record repair result",
+      description:
+        "Record whether an applied repair passed or failed in simulation, or still " +
+        "needs a physical hardware test. " + WORKSPACE_REVISION_HINT,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
       inputSchema: {
         type: "object",
         properties: {
           repairId: { type: "string" },
-          basedOnRevision: { type: "integer" }
-        }
-      }
-    },
-    {
-      name: "verify_device_behavior",
-      title: "Verify example behavior",
-      description:
-        "Bundled environmental-controller example only. Verify the repaired branch against the explicit simulated-device " +
-        "contract (supply rail, reset release level, boot timing). The " +
-        "result is labelled simulation-only and never claims the physical " +
-        "repair is proven. " + REVISION_HINT,
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
-      inputSchema: {
-        type: "object",
-        properties: {
-          basedOnRevision: { type: "integer" }
-        }
+          status: { type: "string", enum: ["verified-in-simulation", "failed-in-simulation", "needs-hardware-test"] },
+          summary: { type: "string" }, basedOnRevision: { type: "integer" }
+        },
+        required: ["repairId", "status", "summary"]
       }
     }
   ];
 
   var TOOL_DEFINITIONS = WORKSPACE_TOOL_DEFINITIONS
     .concat(EDITOR_TOOL_DEFINITIONS)
-    .concat(DIAGNOSTIC_TOOL_DEFINITIONS);
+    .concat(WORKFLOW_TOOL_DEFINITIONS);
 
   function createWebMcpController(options) {
     options = options || {};
-    var engine = options.engine;
-    if (!engine) throw new Error("createWebMcpController requires an engine");
     var workspace = options.workspace;
     if (!workspace) throw new Error("createWebMcpController requires a workspace");
     // Optional instrumentation hook for tests and development; it is not UI.
@@ -766,7 +731,7 @@
     var handlers = {
       get_workspace: function () {
         return workspace.getWorkspace().then(function (result) {
-          result.pendingHumanActions = engine.getDiagnosticState().humanTasks.filter(function (task) {
+          result.pendingHumanActions = result.session.humanTasks.filter(function (task) {
             return task.status === "pending";
           });
           return result;
@@ -921,41 +886,35 @@
           "CircuitJS1 simulation reset", "simulation-reset", "Reset simulation time and transient state."
         );
       },
-      get_diagnostic_state: function () {
-        return engine.getDiagnosticState();
+      record_investigation: function (args) {
+        return workspace.recordInvestigation(args, { actor: "agent" });
       },
-      inspect_component: function (args) {
-        return engine.inspectComponent(args, { actor: "agent" });
-      },
-      trace_signal_path: function (args) {
-        return engine.traceSignalPath(args, { actor: "agent" });
-      },
-      request_measurement: function (args) {
-        return engine.requestMeasurement(args, { actor: "agent" });
+      record_evidence: function (args) {
+        return workspace.recordEvidence(args, { actor: "agent" });
       },
       propose_hypothesis: function (args) {
-        return engine.proposeHypothesis(args, { actor: "agent" });
+        return workspace.proposeHypothesis(args, { actor: "agent" });
       },
       update_hypothesis: function (args) {
-        return engine.updateHypothesis(args, { actor: "agent" });
+        return workspace.updateHypothesis(args, { actor: "agent" });
       },
       stage_repair: function (args) {
-        return engine.stageRepair(args, { actor: "agent" });
+        return workspace.stageRepair(args, { actor: "agent" });
       },
-      request_repair_simulation: function (args) {
-        return engine.requestRepairSimulation(args, { actor: "agent" });
+      request_repair_approval: function (args) {
+        return workspace.requestRepairApproval(args, { actor: "agent" });
       },
-      verify_device_behavior: function (args) {
-        return engine.verifyDeviceBehavior(args, { actor: "agent" });
+      apply_staged_repair: function (args) {
+        return workspace.applyStagedRepair(args, { actor: "agent" });
+      },
+      record_repair_result: function (args) {
+        return workspace.recordRepairResult(args, { actor: "agent" });
       }
     };
 
     function log(entry) {
       entry.at = new Date().toISOString();
-      entry.revision = {
-        workspace: workspace.state.revision,
-        diagnostic: engine.state.revision
-      };
+      entry.revision = { workspace: workspace.state.revision };
       onLog(entry);
       return entry;
     }
@@ -1056,7 +1015,7 @@
   return {
     WORKSPACE_TOOL_DEFINITIONS: WORKSPACE_TOOL_DEFINITIONS,
     EDITOR_TOOL_DEFINITIONS: EDITOR_TOOL_DEFINITIONS,
-    DIAGNOSTIC_TOOL_DEFINITIONS: DIAGNOSTIC_TOOL_DEFINITIONS,
+    WORKFLOW_TOOL_DEFINITIONS: WORKFLOW_TOOL_DEFINITIONS,
     TOOL_DEFINITIONS: TOOL_DEFINITIONS,
     createWebMcpController: createWebMcpController
   };

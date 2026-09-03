@@ -3,16 +3,15 @@
  *
  * Two interchangeable implementations behind one interface:
  *
- *   readNodeVoltage(node, branch) -> { value, unit, source }
- *   loadBranch(branch)            -> void (switches the simulated circuit)
- *   estimateResetRelease(branch)  -> { thresholdV, timeConstantMs, releaseTimeMs, source }
+ *   exportCircuit()               -> CircuitJS circuit text
+ *   importCircuit(circuitText)    -> void
+ *   readCurrentNodeVoltage(node)  -> { value, unit, source }
  *   getEditorCapabilities()       -> native editor coverage and element catalog
  *   getEditorState()              -> CircuitJS1 editor state
  *   applyEditorActions(actions)   -> atomic, verified native editor mutations
  *
- * - DeterministicPreviewAdapter returns the scenario's documented readings,
- *   so the entire workflow runs before the ~100 MB upstream runtime is
- *   installed.
+ * - CircuitTextAdapter keeps import/export and inspection available if the
+ *   bundled simulator cannot be loaded. It never invents simulation values.
  *
  * - CircuitJS1BridgeAdapter speaks the documented CircuitJS1 JavaScript
  *   interface through a same-origin iframe:
@@ -22,9 +21,8 @@
  *     CircuitJS1.setSimRunning(bool) / isRunning() / getTime()
  *   Docs: http://www.falstad.com/circuit/doc/js-interface.html
  *
- * The bridge is defensive: if anything goes wrong it falls back to the
- * preview values and reports the degraded source, never blocking the
- * diagnostic workflow.
+ * The bridge is defensive: if a live read fails it reports the failure rather
+ * than substituting sample data.
  */
 (function (root, factory) {
   var api = factory(root);
@@ -36,31 +34,9 @@
 })(typeof self !== "undefined" ? self : globalThis, function (root) {
   "use strict";
 
-  var SCENARIO_API = root.EmpeirikModules
-    ? root.EmpeirikModules.scenario
-    : null;
+  var BLANK_CIRCUIT = "$ 1 5.0E-6 10 50 5.0";
 
-  function previewTiming(scenario, branch) {
-    var t = scenario.preview.timing;
-    if (branch === "repaired") {
-      return {
-        thresholdV: t.thresholdV,
-        timeConstantMs: t.timeConstantMs,
-        releaseTimeMs: t.releaseTimeMs,
-        settledHigh: true,
-        source: "deterministic-preview"
-      };
-    }
-    return {
-      thresholdV: t.thresholdV,
-      timeConstantMs: t.timeConstantMs,
-      releaseTimeMs: null,
-      settledHigh: false,
-      source: "deterministic-preview"
-    };
-  }
-
-  function previewElements(circuitText) {
+  function parseCircuitElements(circuitText) {
     var names = {
       r: "resistor",
       c: "capacitor",
@@ -122,72 +98,38 @@
     return /^(\$|<\?xml\b|<cir\b)/i.test(String(value || "").trim());
   }
 
-  function DeterministicPreviewAdapter(options) {
-    options = options || {};
-    this.scenarioApi = options.scenarioApi || SCENARIO_API;
-    this.scenario = this.scenarioApi.scenario;
-    this.mode = "preview";
-    this.branch = "faulted";
-    this.running = true;
-    this.currentCircuit = this.scenario.circuitStrings.faulted;
+  function CircuitTextAdapter() {
+    this.mode = "circuit-text";
+    this.running = false;
+    this.currentCircuit = BLANK_CIRCUIT;
   }
 
-  DeterministicPreviewAdapter.prototype.describe = function () {
+  CircuitTextAdapter.prototype.describe = function () {
     return {
-      mode: "preview",
-      label: "Deterministic preview",
-      detail:
-        "Running the scenario's documented readings. Install CircuitJS1 " +
-        "(npm run install:circuitjs) for the live simulator."
+      mode: "circuit-text",
+      label: "Circuit text only",
+      detail: "CircuitJS1 is unavailable; circuit text can still be imported and inspected."
     };
   };
 
-  DeterministicPreviewAdapter.prototype.loadBranch = async function (branch) {
-    this.branch = branch;
-    this.currentCircuit = this.scenario.circuitStrings[branch] || this.currentCircuit;
-  };
-
-  DeterministicPreviewAdapter.prototype.readNodeVoltage = async function (node, branch) {
-    var table = this.scenario.preview[branch] || this.scenario.preview.faulted;
-    if (typeof table[node] !== "number") {
-      throw new Error("Preview adapter has no reading for node '" + node + "'.");
-    }
-    return {
-      value: table[node],
-      unit: "V",
-      source: "deterministic-preview"
-    };
-  };
-
-  DeterministicPreviewAdapter.prototype.estimateResetRelease = async function (branch) {
-    return previewTiming(this.scenario, branch);
-  };
-
-  DeterministicPreviewAdapter.prototype.exportCircuit = async function () {
+  CircuitTextAdapter.prototype.exportCircuit = async function () {
     return this.currentCircuit;
   };
 
-  DeterministicPreviewAdapter.prototype.importCircuit = async function (circuitText) {
+  CircuitTextAdapter.prototype.importCircuit = async function (circuitText) {
     this.currentCircuit = String(circuitText || "");
-    if (this.currentCircuit === this.scenario.circuitStrings.faulted) {
-      this.branch = "faulted";
-    } else if (this.currentCircuit === this.scenario.circuitStrings.repaired) {
-      this.branch = "repaired";
-    } else {
-      this.branch = "custom";
-    }
     this.running = true;
   };
 
-  DeterministicPreviewAdapter.prototype.getElements = async function () {
-    return previewElements(this.currentCircuit);
+  CircuitTextAdapter.prototype.getElements = async function () {
+    return parseCircuitElements(this.currentCircuit);
   };
 
-  DeterministicPreviewAdapter.prototype.getCircuitSnapshot = async function (options) {
+  CircuitTextAdapter.prototype.getCircuitSnapshot = async function (options) {
     options = options || {};
     var elements = await this.getElements();
     var snapshot = {
-      source: "deterministic-preview",
+      source: "circuit-text",
       editorAvailable: false,
       running: this.running,
       time: null,
@@ -198,39 +140,32 @@
     return snapshot;
   };
 
-  DeterministicPreviewAdapter.prototype.readCurrentNodeVoltage = async function (node) {
-    var table = this.scenario.preview[this.branch];
-    if (!table || typeof table[node] !== "number") {
-      throw new Error(
-        "CircuitJS1 is required to measure arbitrary labeled nodes; the preview " +
-        "adapter only knows the bundled example."
-      );
-    }
-    return { value: table[node], unit: "V", source: "deterministic-preview" };
+  CircuitTextAdapter.prototype.readCurrentNodeVoltage = async function () {
+    throw new Error("CircuitJS1 must be connected before a node voltage can be measured.");
   };
 
-  DeterministicPreviewAdapter.prototype.setSimulationRunning = async function (running) {
+  CircuitTextAdapter.prototype.setSimulationRunning = async function (running) {
     this.running = Boolean(running);
   };
 
-  DeterministicPreviewAdapter.prototype.getEditorCapabilities = async function () {
+  CircuitTextAdapter.prototype.getEditorCapabilities = async function () {
     return {
       available: false,
       coverage: "circuit-text-only",
       reason:
-        "The deterministic preview can load complete CircuitJS exports, but native " +
+        "Circuit text can be loaded, but native " +
         "element-by-element editing requires the bundled empeirik CircuitJS1 bridge."
     };
   };
 
-  DeterministicPreviewAdapter.prototype.getEditorState = async function () {
+  CircuitTextAdapter.prototype.getEditorState = async function () {
     throw adapterError(
       "EDITOR_BRIDGE_UNAVAILABLE",
-      "Native CircuitJS1 editing is unavailable in deterministic preview mode."
+      "Native CircuitJS1 editing is unavailable while the simulator is disconnected."
     );
   };
 
-  DeterministicPreviewAdapter.prototype.applyEditorActions = async function () {
+  CircuitTextAdapter.prototype.applyEditorActions = async function () {
     throw adapterError(
       "EDITOR_BRIDGE_UNAVAILABLE",
       "Install or build the empeirik CircuitJS1 runtime before using editor actions."
@@ -241,17 +176,13 @@
 
   function CircuitJS1BridgeAdapter(options) {
     options = options || {};
-    this.scenarioApi = options.scenarioApi || SCENARIO_API;
-    this.scenario = this.scenarioApi.scenario;
     this.iframe = options.iframe || null;
     this.sim = null;
     this.mode = "circuitjs";
-    this.branch = "faulted";
-    this.branchVerified = false;
     this.degraded = false;
     this.ready = false;
     this.editorAvailable = false;
-    this.lastCircuitText = this.scenario.circuitStrings.faulted;
+    this.lastCircuitText = BLANK_CIRCUIT;
   }
 
   CircuitJS1BridgeAdapter.prototype._simOrNull = function () {
@@ -297,7 +228,7 @@
       mode: "circuitjs",
       label: this.degraded ? "CircuitJS1 degraded" : "CircuitJS1 connected",
       detail: this.degraded
-        ? "Runtime present but the bridge did not answer; preview values are used."
+        ? "Runtime present, but the bridge did not answer."
         : nativeEditor
           ? "Native agent bridge connected: CircuitJS1 elements, properties, controls, menus, view, and scopes are directly editable."
           : "Live simulation connected, but this runtime lacks the native editor bridge."
@@ -331,107 +262,6 @@
       return false;
     }
     return true;
-  };
-
-  /*
-   * The 3V3 rail sits at ~3.3 V on both branches of this scenario, so a
-   * near-zero reading can only mean the runtime has not actually loaded
-   * our circuit (e.g. importCircuit raced the GWT startup). That makes it
-   * a safe "did the import stick?" probe.
-   */
-  CircuitJS1BridgeAdapter.prototype._railOk = function () {
-    try {
-      var v = this.sim.getNodeVoltage("3V3");
-      return typeof v === "number" && isFinite(v) && Math.abs(v) > 0.5;
-    } catch (e) {
-      return false;
-    }
-  };
-
-  CircuitJS1BridgeAdapter.prototype.loadBranch = async function (branch) {
-    this.branch = branch;
-    this.lastCircuitText = this.scenario.circuitStrings[branch] || this.lastCircuitText;
-    this.branchVerified = false;
-    if (!this.sim) {
-      this.degraded = true;
-      return;
-    }
-    for (var attempt = 0; attempt < 3; attempt++) {
-      try {
-        this.sim.importCircuit(this.scenario.circuitStrings[branch], false);
-        this.sim.setSimRunning(true);
-      } catch (e) {
-        this.degraded = true;
-        return;
-      }
-      // Let the transient settle (5 tau at tau = 1 ms is reached quickly).
-      await this._sleep(1200);
-      if (this._railOk()) {
-        this.branchVerified = true;
-        this.degraded = false;
-        return;
-      }
-      // Import raced the runtime startup; retry after another beat.
-    }
-    this.degraded = true;
-  };
-
-  CircuitJS1BridgeAdapter.prototype.readNodeVoltage = async function (node, branch) {
-    if (branch !== this.branch || !this.branchVerified) {
-      await this.loadBranch(branch);
-    }
-    if (this.sim && !this.degraded) {
-      try {
-        var v = this.sim.getNodeVoltage(node);
-        if (typeof v === "number" && isFinite(v)) {
-          return { value: v, unit: "V", source: "circuitjs1" };
-        }
-      } catch (e) {
-        this.degraded = true;
-      }
-    }
-    var table = this.scenario.preview[branch];
-    return {
-      value: table[node],
-      unit: "V",
-      source: "preview-fallback"
-    };
-  };
-
-  CircuitJS1BridgeAdapter.prototype.estimateResetRelease = async function (branch) {
-    var t = this.scenario.preview.timing;
-    this.branchVerified = false;
-    if (this.sim && !this.degraded) {
-      try {
-        // Re-import resets sim time; sample the RESET node until it crosses
-        // the release threshold.
-        this.sim.importCircuit(this.scenario.circuitStrings[branch], false);
-        this.sim.setSimRunning(true);
-        var prev = null;
-        for (var i = 0; i < 60; i++) {
-          var now = this.sim.getTime();
-          var v = this.sim.getNodeVoltage("RESET");
-          if (typeof v === "number" && prev && v >= t.thresholdV && prev.v < t.thresholdV) {
-            var frac = (t.thresholdV - prev.v) / (v - prev.v);
-            var cross = prev.t + frac * (now - prev.t);
-            this.branch = branch;
-            this.branchVerified = true;
-            return {
-              thresholdV: t.thresholdV,
-              timeConstantMs: t.timeConstantMs,
-              releaseTimeMs: cross * 1000,
-              settledHigh: true,
-              source: "circuitjs1"
-            };
-          }
-          if (typeof v === "number") prev = { t: now, v: v };
-          await this._sleep(40);
-        }
-      } catch (e) {
-        this.degraded = true;
-      }
-    }
-    return previewTiming(this.scenario, branch);
   };
 
   CircuitJS1BridgeAdapter.prototype.exportCircuit = async function () {
@@ -508,24 +338,18 @@
     this.sim.importCircuit(text, false);
     this.sim.setSimRunning(true);
     this.lastCircuitText = text;
-    this.branch = text === this.scenario.circuitStrings.faulted
-      ? "faulted"
-      : text === this.scenario.circuitStrings.repaired
-        ? "repaired"
-        : "custom";
-    this.branchVerified = true;
     this.degraded = false;
     await this._sleep(220);
   };
 
   CircuitJS1BridgeAdapter.prototype.getElements = async function () {
-    if (!this.sim) return previewElements(this.lastCircuitText);
+    if (!this.sim) return parseCircuitElements(this.lastCircuitText);
     var raw;
     try {
       raw = this.sim.getElements();
     } catch (e) {
       this.degraded = true;
-      return previewElements(this.lastCircuitText);
+      return parseCircuitElements(this.lastCircuitText);
     }
     var items = [];
     var length = raw && typeof raw.length === "number" ? raw.length : 0;
@@ -674,8 +498,8 @@
     var result;
     if (op === "add") {
       result = editor.addElement(
-        String(action.type || ""), Number(action.x1), Number(action.y1),
-        Number(action.x2), Number(action.y2)
+        String(action.type || ""), requireInteger(action.x1, "x1"), requireInteger(action.y1, "y1"),
+        requireInteger(action.x2, "x2"), requireInteger(action.y2, "y2")
       );
       result = copyBridgeValue(result);
       if (action.ref) {
@@ -689,7 +513,8 @@
     if (op === "move") {
       index = this._resolveElementIndex(action, refs);
       return copyBridgeValue(editor.moveElement(
-        index, Number(action.x1), Number(action.y1), Number(action.x2), Number(action.y2)
+        index, requireInteger(action.x1, "x1"), requireInteger(action.y1, "y1"),
+        requireInteger(action.x2, "x2"), requireInteger(action.y2, "y2")
       ));
     }
     if (op === "split-wire") {
@@ -707,14 +532,20 @@
     }
     if (op === "edit") {
       index = this._resolveElementIndex(action, refs);
-      return copyBridgeValue(editor.setElementEditValue(index, Number(action.fieldIndex), action.value));
+      return copyBridgeValue(editor.setElementEditValue(
+        index, requireInteger(action.fieldIndex, "fieldIndex", 0), action.value
+      ));
     }
     if (op === "global-edit") {
-      return copyBridgeValue(editor.setGlobalEditValue(Number(action.fieldIndex), action.value));
+      return copyBridgeValue(editor.setGlobalEditValue(
+        requireInteger(action.fieldIndex, "fieldIndex", 0), action.value
+      ));
     }
     if (op === "element-control") {
       index = this._resolveElementIndex(action, refs);
-      return copyBridgeValue(editor.setElementControl(index, String(action.controlId || ""), Number(action.value)));
+      return copyBridgeValue(editor.setElementControl(
+        index, String(action.controlId || ""), requireFiniteNumber(action.value, "value")
+      ));
     }
     if (op === "create-adjustable") {
       index = this._resolveElementIndex(action, refs);
@@ -749,7 +580,14 @@
     if (op === "remove" || op === "select") {
       var indices = this._resolveElementIndices(action, refs);
       if (op === "select") {
-        return editor.selectElements(indices, String(action.mode || "replace"));
+        var mode = String(action.mode || "replace");
+        if (["replace", "add", "remove", "toggle"].indexOf(mode) === -1) {
+          throw adapterError("INVALID_SELECTION_MODE", "Selection mode must be replace, add, remove, or toggle.");
+        }
+        return editor.selectElements(indices, mode);
+      }
+      if (indices.length === 0) {
+        throw adapterError("ELEMENT_INDICES_REQUIRED", "Remove requires at least one element index or reference.");
       }
       result = editor.removeElements(indices);
       var removed = indices.slice().sort(function (a, b) { return a - b; });
@@ -769,30 +607,40 @@
         : -1;
       return copyBridgeValue(editor.invokeCommand(
         String(action.menu || "main"), String(action.item || ""), targetIndex,
-        action.scopeIndex == null ? -1 : Number(action.scopeIndex),
-        action.plotIndex == null ? -1 : Number(action.plotIndex)
+        action.scopeIndex == null ? -1 : requireInteger(action.scopeIndex, "scopeIndex", 0),
+        action.plotIndex == null ? -1 : requireInteger(action.plotIndex, "plotIndex", 0)
       ));
     }
     if (op === "option") {
-      return copyBridgeValue(editor.setOption(String(action.name || ""), Boolean(action.value)));
+      if (typeof action.value !== "boolean") {
+        throw adapterError("INVALID_EDITOR_ARGUMENT", "option value must be true or false.");
+      }
+      return copyBridgeValue(editor.setOption(String(action.name || ""), action.value));
     }
     if (op === "ui-control") {
-      return copyBridgeValue(editor.setControl(String(action.name || ""), Number(action.value)));
+      return copyBridgeValue(editor.setControl(
+        String(action.name || ""), requireInteger(action.value, "value")
+      ));
     }
     if (op === "view") {
       return copyBridgeValue(editor.setView(
-        Number(action.scale), Number(action.translateX), Number(action.translateY)
+        requireFiniteNumber(action.scale, "scale"),
+        requireFiniteNumber(action.translateX, "translateX"),
+        requireFiniteNumber(action.translateY, "translateY")
       ));
     }
     if (op === "scope") {
       return copyBridgeValue(editor.setScopeProperty(
-        Number(action.scopeIndex), String(action.property || ""), action.value,
-        action.plotIndex == null ? -1 : Number(action.plotIndex)
+        requireInteger(action.scopeIndex, "scopeIndex", 0), String(action.property || ""), action.value,
+        action.plotIndex == null ? -1 : requireInteger(action.plotIndex, "plotIndex", 0)
       ));
     }
     if (op === "reset-simulation") return copyBridgeValue(editor.resetSimulation());
     if (op === "run") {
-      this.sim.setSimRunning(Boolean(action.running));
+      if (typeof action.running !== "boolean") {
+        throw adapterError("INVALID_EDITOR_ARGUMENT", "running must be true or false.");
+      }
+      this.sim.setSimRunning(action.running);
       return { running: Boolean(this.sim.isRunning()) };
     }
     throw adapterError("UNKNOWN_EDITOR_OPERATION", "Unknown CircuitJS editor operation '" + op + "'.");
@@ -806,40 +654,74 @@
     if (actions.length > 100) {
       throw adapterError("TOO_MANY_EDITOR_ACTIONS", "One atomic batch may contain at most 100 editor actions.");
     }
+    var historyActions = actions.filter(function (action) {
+      var item = String(action && action.item || "").toLowerCase();
+      return action && action.op === "command" && (item === "undo" || item === "redo");
+    });
+    if (historyActions.length && actions.length !== 1) {
+      throw adapterError(
+        "HISTORY_COMMAND_MUST_BE_STANDALONE",
+        "Undo and redo must be sent as standalone actions so CircuitJS1 can preserve its native history."
+      );
+    }
     var editor = this._editorOrThrow();
     var before = this.sim.exportCircuit();
     var wasRunning = Boolean(this.sim.isRunning());
     var refs = {};
     var results = [];
-    for (var i = 0; i < actions.length; i++) {
-      try {
+    var nativeBatch = historyActions.length === 0 &&
+      typeof editor.beginBatch === "function" &&
+      typeof editor.commitBatch === "function" &&
+      typeof editor.cancelBatch === "function";
+    var batchOpen = false;
+    var i = 0;
+    try {
+      if (nativeBatch) {
+        editor.beginBatch();
+        batchOpen = true;
+      }
+      for (i = 0; i < actions.length; i++) {
         results.push(this._executeEditorAction(editor, actions[i] || {}, refs));
-      } catch (cause) {
+      }
+      if (batchOpen) {
+        editor.commitBatch();
+        batchOpen = false;
+      }
+    } catch (cause) {
+      var rollbackFailures = [];
+      if (batchOpen) {
         try {
-          this.sim.importCircuit(before, false);
-          this.sim.setSimRunning(wasRunning);
-        } catch (rollbackError) {
-          throw adapterError(
-            "EDITOR_ROLLBACK_FAILED",
-            "CircuitJS action " + (i + 1) + " failed and the previous circuit could not be restored: " +
-              (rollbackError.message || String(rollbackError)),
-            { failedActionIndex: i, failedOperation: actions[i] && actions[i].op }
-          );
+          editor.cancelBatch();
+          batchOpen = false;
+        } catch (historyError) {
+          rollbackFailures.push("native history: " + (historyError.message || String(historyError)));
         }
+      }
+      try {
+        this.sim.importCircuit(before, false);
+        this.sim.setSimRunning(wasRunning);
+      } catch (rollbackError) {
+        rollbackFailures.push("circuit state: " + (rollbackError.message || String(rollbackError)));
+      }
+      var failedIndex = Math.min(i, actions.length - 1);
+      var failedOperation = actions[failedIndex] && actions[failedIndex].op;
+      if (rollbackFailures.length) {
         throw adapterError(
-          cause.code || "EDITOR_ACTION_FAILED",
-          "CircuitJS action " + (i + 1) + " (" + String(actions[i] && actions[i].op) + ") failed: " +
-            (cause.message || String(cause)),
-          { failedActionIndex: i, failedOperation: actions[i] && actions[i].op }
+          "EDITOR_ROLLBACK_FAILED",
+          "CircuitJS action " + (failedIndex + 1) + " failed and the previous state could not be fully restored: " +
+            rollbackFailures.join("; "),
+          { failedActionIndex: failedIndex, failedOperation: failedOperation }
         );
       }
+      throw adapterError(
+        cause.code || "EDITOR_ACTION_FAILED",
+        "CircuitJS action " + (failedIndex + 1) + " (" + String(failedOperation) + ") failed: " +
+          (cause.message || String(cause)),
+        { failedActionIndex: failedIndex, failedOperation: failedOperation }
+      );
     }
     var after = this.sim.exportCircuit();
     this.lastCircuitText = after;
-    this.branch = after === this.scenario.circuitStrings.faulted
-      ? "faulted"
-      : after === this.scenario.circuitStrings.repaired ? "repaired" : "custom";
-    this.branchVerified = true;
     this.degraded = false;
     var state = copyBridgeValue(editor.getState());
     state.globalEditFields = copyBridgeValue(editor.getGlobalEditInfo());
@@ -858,12 +740,11 @@
   /*
    * Factory used by the browser entry point. Probes for the same-origin
    * runtime at <runtimeBase>circuitjs.html and picks the bridge when
-   * present. Never throws: on any probe failure the preview adapter keeps
-   * the workflow alive.
+   * present. Never throws: on any probe failure the circuit-text adapter keeps
+   * import/export available without inventing measurements.
    */
   async function createCircuitAdapter(options) {
     options = options || {};
-    var scenarioApi = options.scenarioApi || SCENARIO_API;
     var runtimeBase = options.runtimeBase || "circuitjs/";
     var probe = options.probe || (
       typeof fetch === "function"
@@ -877,18 +758,19 @@
 
     var runtimePresent = await probe();
     if (!runtimePresent) {
-      return new DeterministicPreviewAdapter({ scenarioApi: scenarioApi });
+      return new CircuitTextAdapter();
     }
-    var adapter = new CircuitJS1BridgeAdapter({ scenarioApi: scenarioApi });
+    var adapter = new CircuitJS1BridgeAdapter();
     if (options.iframe) {
       await adapter.connect(options.iframe);
     }
-    // The iframe may be mounted later; loadBranch/connect can run then.
+    // The iframe may be mounted later; connect can run then.
     return adapter;
   }
 
   return {
-    DeterministicPreviewAdapter: DeterministicPreviewAdapter,
+    BLANK_CIRCUIT: BLANK_CIRCUIT,
+    CircuitTextAdapter: CircuitTextAdapter,
     CircuitJS1BridgeAdapter: CircuitJS1BridgeAdapter,
     createCircuitAdapter: createCircuitAdapter
   };

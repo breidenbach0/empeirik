@@ -11,6 +11,7 @@ package com.lushprojects.circuitjs1.client;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Vector;
 
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.core.client.JsArray;
@@ -19,9 +20,67 @@ import com.google.gwt.user.client.ui.TextBox;
 
 class AgentBridge {
     private final CirSim app;
+    private boolean batchOpen;
+    private int batchUndoSize;
+    private boolean batchSavedFlagBefore;
+    private boolean batchUnsavedChangesBefore;
+    private Vector<UndoManager.UndoItem> batchUndoBefore;
+    private Vector<UndoManager.UndoItem> batchRedoBefore;
 
     AgentBridge(CirSim app) {
 	this.app = app;
+    }
+
+    /*
+     * CircuitJS1 normally records one undo snapshot for every editor command.
+     * An agent action can contain many commands, so preserve a single snapshot
+     * for the entire batch and collapse any snapshots created deeper inside
+     * CircuitJS1's command manager when the batch commits.
+     */
+    void beginBatch() {
+	if (batchOpen)
+	    throw new IllegalStateException("A CircuitJS1 editor batch is already open");
+	batchOpen = true;
+	batchSavedFlagBefore = app.savedFlag;
+	batchUnsavedChangesBefore = app.unsavedChanges;
+	batchUndoBefore = new Vector<UndoManager.UndoItem>(app.undoManager.undoStack);
+	batchRedoBefore = new Vector<UndoManager.UndoItem>(app.undoManager.redoStack);
+	app.undoManager.pushUndo();
+	batchUndoSize = app.undoManager.undoStack.size();
+    }
+
+    void commitBatch() {
+	if (!batchOpen)
+	    throw new IllegalStateException("No CircuitJS1 editor batch is open");
+	while (app.undoManager.undoStack.size() > batchUndoSize)
+	    app.undoManager.undoStack.remove(app.undoManager.undoStack.size() - 1);
+	app.undoManager.enableUndoRedo();
+	clearBatch();
+    }
+
+    void cancelBatch() {
+	if (!batchOpen)
+	    return;
+	app.undoManager.undoStack = batchUndoBefore;
+	app.undoManager.redoStack = batchRedoBefore;
+	app.savedFlag = batchSavedFlagBefore;
+	app.unsavedChanges = batchUnsavedChangesBefore;
+	app.undoManager.enableUndoRedo();
+	clearBatch();
+    }
+
+    private void clearBatch() {
+	batchOpen = false;
+	batchUndoSize = 0;
+	batchSavedFlagBefore = false;
+	batchUnsavedChangesBefore = false;
+	batchUndoBefore = null;
+	batchRedoBefore = null;
+    }
+
+    private void pushUndo() {
+	if (!batchOpen)
+	    app.undoManager.pushUndo();
     }
 
     private native JsArray<JavaScriptObject> newArray() /*-{
@@ -241,7 +300,7 @@ class AgentBridge {
 	    boolean canRedo, JavaScriptObject options, JsArray<JavaScriptObject> elements,
 	    JsArray<JavaScriptObject> scopes) /*-{
 	return {
-	    bridgeVersion: "1.0.0",
+	    bridgeVersion: "1.1.0",
 	    circuit: circuit,
 	    running: running,
 	    time: time,
@@ -257,8 +316,9 @@ class AgentBridge {
 
     private native JavaScriptObject makeCapabilities(JsArray<JavaScriptObject> elementTypes) /*-{
 	return {
-	    bridgeVersion: "1.0.0",
+	    bridgeVersion: "1.1.0",
 	    coverage: "native-editor",
+	    atomicBatchUndo: true,
 	    elementTypes: elementTypes,
 	    elementOperations: [
 		"add", "remove", "move", "split-wire", "select", "edit-property",
@@ -432,7 +492,7 @@ class AgentBridge {
 
     JavaScriptObject setElementEditValue(int index, int fieldIndex, String value) {
 	CircuitElm ce = requireElement(index);
-	app.undoManager.pushUndo();
+	pushUndo();
 	applyEditableValue(ce, fieldIndex, value);
 	app.needAnalyze();
 	markChanged();
@@ -500,7 +560,7 @@ class AgentBridge {
 	    int requested = (int)value;
 	    if (requested != value || requested < 0 || requested >= se.posCount)
 		throw new IllegalArgumentException("Switch position is out of range");
-	    app.undoManager.pushUndo();
+	    pushUndo();
 	    int guard = se.posCount + 1;
 	    while (se.position != requested && guard-- > 0)
 		se.toggle();
@@ -518,7 +578,7 @@ class AgentBridge {
 		throw new IllegalArgumentException("Element has no built-in slider");
 	    if (value < 0 || value > 100)
 		throw new IllegalArgumentException("Built-in slider value must be between 0 and 100");
-	    app.undoManager.pushUndo();
+	    pushUndo();
 	    slider.setValue((int)value);
 	} else if (controlId.startsWith("adjustable:")) {
 	    int adjustableIndex;
@@ -534,7 +594,7 @@ class AgentBridge {
 		throw new IllegalArgumentException("Adjustable does not belong to element " + index);
 	    if (value < adj.minValue || value > adj.maxValue)
 		throw new IllegalArgumentException("Adjustable value is out of range");
-	    app.undoManager.pushUndo();
+	    pushUndo();
 	    setAdjustableSliderValue(adj, value);
 	} else {
 	    throw new IllegalArgumentException("Unknown element control '" + controlId + "'");
@@ -566,7 +626,7 @@ class AgentBridge {
 	    if (shared.sharedSlider != null)
 		throw new IllegalArgumentException("An adjustable can only share a primary slider");
 	}
-	app.undoManager.pushUndo();
+	pushUndo();
 	Adjustable adj = new Adjustable(ce, fieldIndex);
 	adj.sliderText = label == null || label.trim().length() == 0 ? ei.name : label.trim();
 	adj.minValue = min;
@@ -608,7 +668,7 @@ class AgentBridge {
 	    if (adj.sliderBeingShared())
 		throw new IllegalArgumentException("A slider used by other adjustables cannot itself become shared");
 	}
-	app.undoManager.pushUndo();
+	pushUndo();
 	// -2 keeps the current sharing arrangement, -1 creates an independent
 	// slider, and a non-negative index shares that primary slider.
 	if (sharedAdjustableIndex != -2 && requestedShared != adj.sharedSlider) {
@@ -644,7 +704,7 @@ class AgentBridge {
 	if (adj.sliderBeingShared())
 	    throw new IllegalArgumentException("Remove or reconfigure shared adjustables before removing their primary slider");
 	CircuitElm ce = adj.elm;
-	app.undoManager.pushUndo();
+	pushUndo();
 	adj.deleteSlider(app);
 	app.adjustables.remove(adj);
 	Adjustable.reorderAdjustables();
@@ -688,7 +748,7 @@ class AgentBridge {
 	CircuitElm ce = app.constructElement(type, app.snapGrid(x1), app.snapGrid(y1));
 	if (ce == null)
 	    throw new IllegalArgumentException("Unknown CircuitJS element type '" + requestedType + "'");
-	app.undoManager.pushUndo();
+	pushUndo();
 	ce.drag(app.snapGrid(x2), app.snapGrid(y2));
 	if (ce.creationFailed()) {
 	    ce.delete();
@@ -713,7 +773,7 @@ class AgentBridge {
 	int sy2 = app.snapGrid(y2);
 	if (sx1 == sx2 && sy1 == sy2)
 	    throw new IllegalArgumentException("Element endpoints must create a non-zero component");
-	app.undoManager.pushUndo();
+	pushUndo();
 	ce.setPosition(sx1, sy1, sx2, sy2);
 	app.mouse.splitAt(ce.x, ce.y);
 	app.mouse.splitAt(ce.x2, ce.y2);
@@ -731,7 +791,7 @@ class AgentBridge {
 	int sy = app.snapGrid(y);
 	if (!wire.pointOnWireInterior(sx, sy))
 	    throw new IllegalArgumentException("Split point must be inside the selected wire");
-	app.undoManager.pushUndo();
+	pushUndo();
 	WireElm newWire = wire.split(sx, sy);
 	if (newWire == null)
 	    throw new IllegalArgumentException("CircuitJS1 could not split this wire at the requested point");
@@ -755,7 +815,7 @@ class AgentBridge {
 		requestedCount++;
 	if (requestedCount == 0)
 	    return 0;
-	app.undoManager.pushUndo();
+	pushUndo();
 	int count = 0;
 	for (int i = remove.length - 1; i >= 0; i--) {
 	    if (!remove[i])
@@ -911,7 +971,7 @@ class AgentBridge {
 	if (("manualScaleValue".equals(property) || "plotPosition".equals(property) ||
 		"acCoupled".equals(property)) && (plotIndex < 0 || plotIndex >= s.plots.size()))
 	    throw new IllegalArgumentException("Scope plot index is out of range");
-	app.undoManager.pushUndo();
+	pushUndo();
 	if ("label".equals(property))
 	    s.setText(value.length() == 0 ? null : value);
 	else if ("speed".equals(property)) {
@@ -988,6 +1048,15 @@ class AgentBridge {
 	if (!$wnd.CircuitJS1)
 	    throw new Error("CircuitJS1 base API must be installed before the editor bridge");
 	$wnd.CircuitJS1.editor = {
+	    beginBatch: $entry(function() {
+		that.@com.lushprojects.circuitjs1.client.AgentBridge::beginBatch()();
+	    }),
+	    commitBatch: $entry(function() {
+		that.@com.lushprojects.circuitjs1.client.AgentBridge::commitBatch()();
+	    }),
+	    cancelBatch: $entry(function() {
+		that.@com.lushprojects.circuitjs1.client.AgentBridge::cancelBatch()();
+	    }),
 	    getCapabilities: $entry(function() {
 		return that.@com.lushprojects.circuitjs1.client.AgentBridge::getCapabilities()();
 	    }),

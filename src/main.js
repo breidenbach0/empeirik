@@ -41,7 +41,6 @@
   }
 
   async function boot() {
-    var scenarioApi = M.scenario;
     var runtimePresent = await probeRuntime();
     var adapter;
 
@@ -52,59 +51,43 @@
       iframe.id = "circuitjs-frame";
       iframe.title = "CircuitJS1 live circuit simulator";
       slot.appendChild(iframe);
-      adapter = new M.circuitAdapter.CircuitJS1BridgeAdapter({ scenarioApi: scenarioApi });
+      adapter = new M.circuitAdapter.CircuitJS1BridgeAdapter();
       iframe.addEventListener("load", function () {
         applyCircuitJsTheme(iframe);
       });
       var connection = adapter.connect(iframe);
-      iframe.src = "circuitjs/circuitjs.html";
+      iframe.src = "circuitjs/circuitjs.html?startCircuit=blank.txt";
       await connection;
       applyCircuitJsTheme(iframe);
     } else {
-      adapter = new M.circuitAdapter.DeterministicPreviewAdapter({ scenarioApi: scenarioApi });
+      adapter = new M.circuitAdapter.CircuitTextAdapter();
     }
 
-    var engine = new M.diagnosticEngine.DiagnosticEngine({
-      scenarioApi: scenarioApi,
-      adapter: adapter,
-      loadBranch: false
-    });
-    await adapter.loadBranch("faulted");
-
-    var workspace = new M.workspace.WorkspaceSession({
-      scenarioApi: scenarioApi,
-      adapter: adapter
-    });
+    var workspace = new M.workspace.WorkspaceSession({ adapter: adapter });
     var ui;
 
     function renderAll() {
       ui.render({
-        workspace: workspace.getState(),
-        diagnostic: engine.getDiagnosticState()
+        workspace: workspace.getState()
       });
     }
 
     ui = M.ui.createUI({
       handlers: {
-        performMeasurement: function (taskId) {
-          return engine.performMeasurement({ taskId: taskId }, { actor: "human" });
-        },
         approveRepair: function (taskId) {
-          return engine.approveRepairSimulation({ taskId: taskId }, { actor: "human" });
+          return workspace.resolveHumanTask(taskId, true, { actor: "human" });
         },
         declineRepair: function (taskId) {
-          return engine.declineRepairSimulation({ taskId: taskId }, { actor: "human" });
+          return workspace.resolveHumanTask(taskId, false, { actor: "human" });
         }
       }
     });
 
     var controller = M.webmcp.createWebMcpController({
-      engine: engine,
       workspace: workspace,
       adapter: adapter
     });
 
-    engine.subscribe(renderAll);
     workspace.subscribe(renderAll);
 
     ui.init();
@@ -113,7 +96,6 @@
     var registration = await controller.register();
 
     root.Empeirik = {
-      engine: engine,
       workspace: workspace,
       adapter: adapter,
       controller: controller,
@@ -121,14 +103,7 @@
       toolDefinitions: controller.toolDefinitions,
       registration: registration,
       resetSession: function () {
-        engine.reset({ loadBranch: false });
         return workspace.reset({ preserveCircuit: true });
-      },
-      loadExample: async function () {
-        engine.reset({ loadBranch: false });
-        workspace.reset({ preserveCircuit: false });
-        await adapter.loadBranch("faulted");
-        return workspace.getState();
       }
     };
   }

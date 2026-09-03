@@ -12,7 +12,9 @@ The build starts from `pfalstad/circuitjs1` commit
 UI: the element factory, generic `Editable` fields, `CommandManager`, option
 menu items, sliders, canvas transform, `ScopeManager`, and `UndoManager`. This
 keeps agent edits and manual edits on one CircuitJS1 canvas and one source of
-truth.
+truth. Agent batches preserve one pre-edit snapshot, so a batch of up to 100
+actions is reverted by one native Undo command and failed batches restore the
+previous undo/redo history.
 
 The canvas patch changes CircuitJS1's light-background mode to Empeirik cream
 and charcoal, makes that mode the default for new visitors, and preserves the

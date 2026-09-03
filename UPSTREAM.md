@@ -67,15 +67,16 @@ empeirik adds `CircuitJS1.editor`, which exposes:
   properties, complete scope configuration, simulation reset, and native
   undo/redo.
 
-The outer adapter adds atomic multi-action batches: it snapshots the exact
-CircuitJS export and run state, executes the batch, and restores the snapshot
-if any action fails. Browser-owned actions such as file pickers, clipboard
-writes, downloads, printing, and fullscreen can still require a user gesture;
-direct circuit import/export and SVG APIs cover the useful non-dialog forms.
+The outer adapter and native bridge add atomic multi-action batches: they
+snapshot the exact CircuitJS export, run state, and native undo history,
+execute the batch as one undoable edit, and restore the snapshot if any action
+fails. Browser-owned actions such as file pickers, clipboard writes, downloads,
+printing, and fullscreen can still require a user gesture; direct circuit
+import/export and SVG APIs cover the useful non-dialog forms.
 
-When the runtime is absent, empeirik falls back to a deterministic preview
-adapter for the bundled controller example. Arbitrary circuit building and
-measurement correctly require the real CircuitJS1 runtime.
+When the runtime is absent, empeirik falls back to a circuit-text adapter for
+import, export, and structural inspection. It never invents simulated readings;
+live building and measurement correctly require the real CircuitJS1 runtime.
 
 ## WebMCP
 

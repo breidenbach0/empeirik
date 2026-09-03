@@ -63,18 +63,23 @@ same session activity, not separate workflows or modes.
 
 ## Agent coverage
 
-empeirik registers 38 WebMCP tools:
+empeirik registers 37 WebMCP tools:
 
 - 9 session tools for goals, inspection, measurements, notes, circuit versions,
   simulation state, and completion.
 - 20 native CircuitJS1 editor tools for components, properties, menus, view,
   scopes, controls, selection, undo, and redo.
-- 9 guarded tools for the bundled hardware-diagnosis example.
+- 8 general diagnostic tools for investigations, evidence, hypotheses, staged
+  repairs, human approval, applying repairs, and recording results.
+
+There is no bundled example case or simulated answer table. Every circuit,
+reading, explanation, and repair in the workspace comes from the active session.
 
 The native bridge exposes the 144 component types in the pinned CircuitJS1
-build. Larger edits can be applied as one atomic batch of up to 100 actions. If
-one action fails, the bridge restores the exact circuit and run state from
-before the batch. Workspace revisions reject stale agent actions.
+build. Larger edits can be applied as one atomic batch of up to 100 actions and
+reverted as one native CircuitJS1 Undo step. If one action fails, the bridge
+restores the exact circuit, run state, and undo history from before the batch.
+Workspace revisions reject stale agent actions.
 
 ## Background and theme
 
