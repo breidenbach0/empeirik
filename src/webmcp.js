@@ -748,6 +748,7 @@
     if (!engine) throw new Error("createWebMcpController requires an engine");
     var workspace = options.workspace;
     if (!workspace) throw new Error("createWebMcpController requires a workspace");
+    // Optional instrumentation hook for tests and development; it is not UI.
     var onLog = typeof options.onLog === "function" ? options.onLog : function () {};
     var registration = { registered: false, mode: "preview", count: 0 };
 
@@ -959,11 +960,7 @@
       return entry;
     }
 
-    /*
-     * The single funnel for tool execution. Demo steps, the console API,
-     * and real WebMCP calls all pass through here, so the visible tool log
-     * covers every agent action.
-     */
+    /* Single execution funnel for the console API and real WebMCP calls. */
     async function invoke(name, args, via) {
       var entry = { tool: name, args: args || {}, via: via || "webmcp", ok: null };
       if (!handlers[name]) {

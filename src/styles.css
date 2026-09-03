@@ -39,25 +39,14 @@ body {
   min-width: 320px;
 }
 
-button,
-summary {
-  font: inherit;
-}
-
 button {
+  font: inherit;
   color: inherit;
 }
 
-button:focus-visible,
-summary:focus-visible,
-a:focus-visible {
+button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-
-a {
-  color: var(--muted-strong);
-  text-underline-offset: 3px;
 }
 
 .topbar {
@@ -249,11 +238,10 @@ a {
 .session-body {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     "pending"
-    "activity"
-    "tools";
+    "activity";
   overflow: hidden;
 }
 
@@ -263,10 +251,6 @@ a {
 
 .activity-section {
   grid-area: activity;
-}
-
-.tool-details {
-  grid-area: tools;
 }
 
 .pending-section,
@@ -457,54 +441,6 @@ a {
   color: var(--muted);
   font-size: 11px;
   line-height: 1.5;
-}
-
-.tool-details {
-  margin: 14px 20px 20px;
-  border: 1px solid var(--border);
-  background: #090b0d;
-}
-
-.tool-details summary {
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 0 12px;
-  color: var(--muted-strong);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-  list-style: none;
-}
-
-.tool-details summary::-webkit-details-marker {
-  display: none;
-}
-
-.tool-details summary span:last-child {
-  max-width: 48%;
-  overflow: hidden;
-  color: var(--muted);
-  font: 9px "SFMono-Regular", Consolas, monospace;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tool-details[open] summary {
-  border-bottom: 1px solid var(--border);
-}
-
-.tool-details pre {
-  max-height: 320px;
-  margin: 0;
-  padding: 12px;
-  overflow: auto;
-  color: var(--muted-strong);
-  font: 10px/1.55 "SFMono-Regular", Consolas, monospace;
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
 .toast {

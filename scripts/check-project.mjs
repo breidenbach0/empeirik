@@ -286,21 +286,25 @@ check(engine.state.revision === 11, `expected revision 11 after the walkthrough,
 const mainSrc = readFileSync(resolve(ROOT, "src/main.js"), "utf8");
 check(mainSrc.includes("WorkspaceSession"), "main.js must create the unified workspace session");
 check(mainSrc.includes("circuitjs-frame"), "main.js must mount CircuitJS1 as the primary canvas");
-check(mainSrc.includes('circuitjs/circuitjs.html?lang=en'), "main.js must force the embedded CircuitJS1 UI to English");
+check(mainSrc.includes('circuitjs/circuitjs.html"'), "main.js must mount the default CircuitJS1 page");
+check(!mainSrc.includes("circuitjs.html?lang="), "CircuitJS1 must use its browser or saved language preference");
 check(mainSrc.includes("root.Empeirik"), "main.js must expose the empeirik browser API");
 check(!mainSrc.includes("DEMO_STEPS"), "main.js must not hard-code the old guided demo");
+check(!mainSrc.includes("setLastCall"), "main.js must not wire the removed raw tool-call inspector");
 
 const uiSrc = readFileSync(resolve(ROOT, "src/ui.js"), "utf8");
 check(uiSrc.includes("createUI"), "ui.js must export createUI");
 check(uiSrc.includes('callHandler("importCircuit"'), "Import must load the selected circuit through the workspace");
 check(!uiSrc.includes("setModeUI") && !uiSrc.includes("WebMCP preview"), "UI code must not retain removed mode or WebMCP status chrome");
+check(!uiSrc.includes("setLastCall") && !uiSrc.includes("workspace-revision"), "UI code must not retain raw call or visible revision chrome");
 const styles = readFileSync(resolve(ROOT, "src/styles.css"), "utf8");
-check(styles.includes(".session-body") && styles.includes("grid-template-rows: auto minmax(0, 1fr) auto"), "session panel must keep the work log in a stable grid row");
+check(styles.includes(".session-body") && styles.includes("grid-template-rows: auto minmax(0, 1fr)"), "session panel must keep the work log in a stable grid row");
 check(styles.includes('"activity"') && styles.includes("grid-area: activity"), "hidden session rows must not displace the work-log viewport");
 check(styles.includes(".session-feed") && styles.includes("overflow-y: auto") && styles.includes("mask-image"), "work log must be an internally scrolling masked viewport");
 check(!html.includes("Guided view"), "the duplicate guided canvas must not remain in the page");
 check(!html.includes("Diagnostic state"), "the abstract diagnostic-state screen must not remain in the page");
 check(!html.includes("Collaboration console"), "the separate collaboration console must not remain in the page");
+check(!html.includes("workspace-revision") && !html.includes("Latest WebMCP call") && !html.includes("tool-details"), "revision and raw tool-call debug chrome must not remain in the page");
 
 /* ---------- licensing ---------- */
 

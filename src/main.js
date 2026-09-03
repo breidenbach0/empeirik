@@ -29,7 +29,7 @@
       iframe.title = "CircuitJS1 live circuit simulator";
       slot.appendChild(iframe);
       adapter = new M.circuitAdapter.CircuitJS1BridgeAdapter({ scenarioApi: scenarioApi });
-      iframe.src = "circuitjs/circuitjs.html?lang=en";
+      iframe.src = "circuitjs/circuitjs.html";
       await adapter.connect(iframe);
     } else {
       adapter = new M.circuitAdapter.DeterministicPreviewAdapter({ scenarioApi: scenarioApi });
@@ -91,10 +91,7 @@
     var controller = M.webmcp.createWebMcpController({
       engine: engine,
       workspace: workspace,
-      adapter: adapter,
-      onLog: function (entry) {
-        ui.setLastCall(entry);
-      }
+      adapter: adapter
     });
 
     engine.subscribe(renderAll);

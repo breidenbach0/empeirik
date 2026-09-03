@@ -1,8 +1,8 @@
 /*
  * empeirik single-workspace UI.
  *
- * CircuitJS1 is the only circuit canvas. Diagnostic facts, agent actions,
- * human approvals, and tool calls are rendered as one chronological session.
+ * CircuitJS1 is the only circuit canvas. Diagnostic facts, successful
+ * workspace changes, and human approvals share one chronological work log.
  */
 (function (root, factory) {
   var api = factory(root);
@@ -224,36 +224,14 @@
       var workspace = payload.workspace;
       var diagnostic = payload.diagnostic;
       el("circuit-title").textContent = workspace.circuitName;
-      el("workspace-revision").textContent = "REV " + workspace.revision;
       renderPending(diagnostic);
       renderFeed(workspace, diagnostic);
-    }
-
-    function setLastCall(entry) {
-      if (!entry) {
-        el("last-call").textContent = "No tool calls yet.";
-        el("tool-status").textContent = "None yet";
-        return;
-      }
-      el("tool-status").textContent = entry.ok ? entry.tool : entry.tool + " failed";
-      var shown = {
-        tool: entry.tool,
-        via: entry.via,
-        arguments: entry.args,
-        ok: entry.ok
-      };
-      if (entry.ok) shown.result = entry.result;
-      else shown.error = entry.error;
-      var text = JSON.stringify(shown, null, 2);
-      if (text.length > 4800) text = text.slice(0, 4800) + "\n… output truncated";
-      el("last-call").textContent = text;
     }
 
     return {
       init: init,
       render: render,
-      notify: notify,
-      setLastCall: setLastCall
+      notify: notify
     };
   }
 
