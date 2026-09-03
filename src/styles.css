@@ -17,6 +17,7 @@
   --warning: var(--orange);
   --danger: var(--orange);
   --blue: var(--orange);
+  --divider: 1px solid var(--charcoal);
   --topbar-height: 62px;
   font-family:
     Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -57,7 +58,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   padding: 0 22px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--divider);
   background: var(--cream);
   position: relative;
   z-index: 5;
@@ -132,7 +133,7 @@ button:focus-visible {
   min-height: 0;
   display: grid;
   grid-template-rows: minmax(0, 1fr);
-  border-right: 1px solid var(--border);
+  border-right: var(--divider);
   background: var(--charcoal);
 }
 
@@ -287,7 +288,6 @@ button:focus-visible {
   flex-direction: column;
   overflow: hidden;
   overscroll-behavior: contain;
-  border-top: 1px solid var(--charcoal);
   background: var(--cream);
   scrollbar-color: var(--charcoal) transparent;
 }
@@ -295,7 +295,7 @@ button:focus-visible {
 .bench {
   flex: 0 0 auto;
   min-height: 0;
-  border-bottom: 1px solid var(--charcoal);
+  border-bottom: var(--divider);
 }
 
 .bench[open] {
@@ -387,6 +387,10 @@ button:focus-visible {
 
 .bench-empty {
   padding: 4px 0 15px;
+}
+
+.work-log-empty {
+  padding-top: 5px;
 }
 
 .session-feed {
@@ -571,7 +575,7 @@ button:focus-visible {
     min-height: 500px;
     grid-template-rows: auto minmax(0, 1fr);
     border-right: 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: var(--divider);
   }
 
   .session-panel {
