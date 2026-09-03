@@ -35,6 +35,7 @@ const expectedFiles = [
   "src/ui.js",
   "src/main.js",
   "src/styles.css",
+  "src/circuitjs-theme.css",
   "tests/diagnostic-engine.test.js",
   "tests/editor-bridge.test.js",
   "scripts/server.mjs",
@@ -47,9 +48,6 @@ const expectedFiles = [
   "vendor/circuitjs1/src/com/lushprojects/circuitjs1/client/JSInterface.java",
   "circuitjs/README.md",
   "circuitjs/service-worker.js",
-  "docs/preview-initial.png",
-  "docs/preview-complete.png",
-  "docs/agent-bridge.md",
   "UPSTREAM.md",
   "LICENSE",
   "package.json"
@@ -74,18 +72,14 @@ for (const src of [
 }
 check(html.includes("src/styles.css"), "index.html does not load src/styles.css");
 check(html.includes("<h1>empeirik</h1>"), "index.html must use the empeirik product name");
-check(html.includes('id="import-circuit"'), "workspace must expose Import");
-check(html.includes('id="export-circuit"'), "workspace must expose Export");
-check(html.includes('id="circuit-import-input"'), "Import must use a real local file input");
-check(html.includes(".circuitjs,.txt,.xml"), "Import must advertise the three supported circuit file extensions");
+check(!html.includes('id="new-session"'), "the unused New session control must not remain");
+check(!html.includes('id="import-circuit"') && !html.includes('id="export-circuit"'), "CircuitJS1's File menu must be the only human import/export surface");
+check(!html.includes("simulator-toolbar") && !html.includes("circuit-title"), "the duplicate circuit header must not remain");
 for (const benchId of ["investigation-bench", "evidence-bench", "hypothesis-bench", "repair-bench"]) {
   check(html.includes(`id="${benchId}"`), `workspace must expose ${benchId}`);
 }
 check(html.includes('data-bench="work-log"') && html.includes('id="work-log-count"'), "Work log must be an expandable session bench with an event count");
 check(/data-bench="work-log" open/.test(html), "Work log must be open by default");
-for (const format of ["circuitjs", "text", "svg", "png"]) {
-  check(html.includes(`data-export-format="${format}"`), `Export picker must expose ${format}`);
-}
 check(!html.includes("copy-prompt"), "the redundant prompt card must not remain in the page");
 check(!html.includes("toggle-simulation"), "the outer duplicate simulation button must not remain");
 check(!html.includes("simulator-status"), "the simulator noise strip must not remain");
@@ -297,19 +291,18 @@ const mainSrc = readFileSync(resolve(ROOT, "src/main.js"), "utf8");
 check(mainSrc.includes("WorkspaceSession"), "main.js must create the unified workspace session");
 check(mainSrc.includes("circuitjs-frame"), "main.js must mount CircuitJS1 as the primary canvas");
 check(mainSrc.includes('circuitjs/circuitjs.html"'), "main.js must mount the default CircuitJS1 page");
+check(mainSrc.includes("applyCircuitJsTheme") && mainSrc.includes("empeirik-circuitjs-theme"), "main.js must apply the persistent same-origin CircuitJS1 theme");
 check(!mainSrc.includes("circuitjs.html?lang="), "CircuitJS1 must use its browser or saved language preference");
 check(mainSrc.includes("root.Empeirik"), "main.js must expose the empeirik browser API");
-check(mainSrc.includes("getCircuitSvg"), "main.js must wire CircuitJS1 image export");
 check(!mainSrc.includes("DEMO_STEPS"), "main.js must not hard-code the old guided demo");
 check(!mainSrc.includes("setLastCall"), "main.js must not wire the removed raw tool-call inspector");
 
 const uiSrc = readFileSync(resolve(ROOT, "src/ui.js"), "utf8");
 check(uiSrc.includes("createUI"), "ui.js must export createUI");
-check(uiSrc.includes('callHandler("importCircuit"'), "Import must load the selected circuit through the workspace");
+check(!uiSrc.includes("new-session") && !uiSrc.includes("import-circuit") && !uiSrc.includes("export-circuit"), "UI code must not retain removed outer controls");
 check(!uiSrc.includes("setModeUI") && !uiSrc.includes("WebMCP preview"), "UI code must not retain removed mode or WebMCP status chrome");
 check(!uiSrc.includes("setLastCall") && !uiSrc.includes("workspace-revision"), "UI code must not retain raw call or visible revision chrome");
 check(uiSrc.includes("renderInvestigation") && uiSrc.includes("renderEvidence") && uiSrc.includes("renderHypotheses") && uiSrc.includes("renderRepairBench"), "UI must render all four expandable benches");
-check(uiSrc.includes("svgToPngBlob") && uiSrc.includes("downloadBlob"), "UI must provide downloadable image and circuit exports");
 const styles = readFileSync(resolve(ROOT, "src/styles.css"), "utf8");
 check(styles.includes(".session-body") && styles.includes('"panels"'), "session panel must reserve its flexible row for the accordion");
 check(styles.includes(".panel-stack") && styles.includes("flex-direction: column"), "all session views must share one vertical accordion");
@@ -317,6 +310,11 @@ check(styles.includes(".session-feed") && styles.includes("overflow-y: auto") &&
 check(styles.includes(".bench[open]") && styles.includes(".bench summary"), "all session views must be expandable with one open view filling the rail");
 const palette = Array.from(new Set((styles.match(/#[0-9a-fA-F]{6}/g) || []).map((color) => color.toLowerCase()))).sort();
 check(JSON.stringify(palette) === JSON.stringify(["#3f3d3a", "#d8794d", "#f7f3eb"].sort()), "outer workspace must use only the logo's charcoal, orange, and cream colors");
+const circuitTheme = readFileSync(resolve(ROOT, "src/circuitjs-theme.css"), "utf8");
+const circuitThemePalette = Array.from(new Set((circuitTheme.match(/#[0-9a-fA-F]{6}/g) || []).map((color) => color.toLowerCase()))).sort();
+check(JSON.stringify(circuitThemePalette) === JSON.stringify(["#3f3d3a", "#d8794d", "#f7f3eb"].sort()), "CircuitJS1 chrome must use the same three-color palette");
+const gitignore = readFileSync(resolve(ROOT, ".gitignore"), "utf8");
+check(/^docs\/$/m.test(gitignore) && /^design-qa\.md$/m.test(gitignore), "local QA evidence must stay out of Git history");
 check(!html.includes("Guided view"), "the duplicate guided canvas must not remain in the page");
 check(!html.includes("Diagnostic state"), "the abstract diagnostic-state screen must not remain in the page");
 check(!html.includes("Collaboration console"), "the separate collaboration console must not remain in the page");

@@ -1,0 +1,181 @@
+/*
+ * Empeirik color layer for the embedded CircuitJS1 interface.
+ *
+ * CircuitJS1 retains its native layout, control geometry, canvas background,
+ * and electrical signal colors. This stylesheet only unifies the surrounding
+ * simulator chrome with Empeirik's three-color palette.
+ */
+
+:root {
+  color-scheme: light;
+  --cjs-cream: #f7f3eb;
+  --cjs-charcoal: #3f3d3a;
+  --cjs-orange: #d8794d;
+}
+
+html,
+body {
+  background-color: var(--cjs-cream) !important;
+  color: var(--cjs-charcoal) !important;
+  scrollbar-color: var(--cjs-charcoal) var(--cjs-cream);
+}
+
+.gwt-MenuBar-horizontal,
+.gwt-MenuBar-horizontal > table,
+.gwt-MenuBar-horizontal tbody,
+.gwt-MenuBar-horizontal tr {
+  border-color: var(--cjs-charcoal) !important;
+  background-color: var(--cjs-cream) !important;
+  background-image: none !important;
+  color: var(--cjs-charcoal) !important;
+}
+
+.gwt-MenuBar .gwt-MenuItem {
+  background-color: var(--cjs-cream) !important;
+  background-image: none !important;
+  color: var(--cjs-charcoal) !important;
+}
+
+.gwt-MenuBar .gwt-MenuItem-selected,
+.gwt-MenuBar .gwt-MenuItem:hover {
+  background-color: var(--cjs-charcoal) !important;
+  color: var(--cjs-cream) !important;
+  box-shadow: inset 3px 0 0 var(--cjs-orange);
+}
+
+.gwt-MenuBar-horizontal .gwt-MenuItem-selected,
+.gwt-MenuBar-horizontal .gwt-MenuItem:hover {
+  box-shadow: inset 0 -3px 0 var(--cjs-orange);
+}
+
+.gwt-MenuBarPopup,
+.gwt-MenuBarPopup > div,
+.gwt-MenuBarPopup table,
+.gwt-MenuBarPopup tbody,
+.gwt-MenuBarPopup tr,
+.gwt-MenuBarPopup td,
+.gwt-PopupPanel,
+.gwt-DecoratedPopupPanel,
+.gwt-DecoratorPanel {
+  border-color: var(--cjs-charcoal) !important;
+  background-color: var(--cjs-cream) !important;
+  background-image: none !important;
+  color: var(--cjs-charcoal) !important;
+}
+
+.gwt-MenuBarPopup {
+  border: 1px solid var(--cjs-charcoal) !important;
+}
+
+.gwt-MenuItemSeparator .menuSeparatorInner {
+  border-color: var(--cjs-charcoal) !important;
+}
+
+#painel,
+#painel > table,
+#painel > table > tbody,
+#painel > table > tbody > tr,
+#painel > table > tbody > tr > td {
+  border-color: var(--cjs-charcoal) !important;
+  background-color: var(--cjs-cream) !important;
+  color: var(--cjs-charcoal) !important;
+}
+
+body div[style*="background-color: rgb(248, 248, 248)"][style*="display: flex"] {
+  border-color: var(--cjs-charcoal) !important;
+  background-color: var(--cjs-cream) !important;
+}
+
+.gwt-Label[title] {
+  color: var(--cjs-charcoal) !important;
+}
+
+.gwt-Label[title]:hover,
+.gwt-Label[title]:focus-visible {
+  background-color: var(--cjs-charcoal) !important;
+  color: var(--cjs-cream) !important;
+  outline-color: var(--cjs-orange) !important;
+}
+
+.palette-container {
+  border-color: var(--cjs-charcoal) !important;
+  background-color: var(--cjs-cream) !important;
+}
+
+.topButton,
+.gwt-Button {
+  border-color: var(--cjs-charcoal) !important;
+  background-color: var(--cjs-cream) !important;
+  background-image: none !important;
+  color: var(--cjs-charcoal) !important;
+}
+
+.topButton-red {
+  border-color: var(--cjs-orange) !important;
+  background-color: var(--cjs-charcoal) !important;
+  background-image: none !important;
+  color: var(--cjs-cream) !important;
+}
+
+.topButton:hover,
+.gwt-Button:hover,
+.topButton:focus-visible,
+.gwt-Button:focus-visible {
+  border-color: var(--cjs-orange) !important;
+  background-color: var(--cjs-charcoal) !important;
+  color: var(--cjs-cream) !important;
+  outline-color: var(--cjs-orange) !important;
+}
+
+.gwt-DialogBox,
+.gwt-DialogBox table,
+.gwt-DialogBox tbody,
+.gwt-DialogBox tr,
+.gwt-DialogBox td,
+.gwt-DialogBox .Caption {
+  border-color: var(--cjs-charcoal) !important;
+  background-color: var(--cjs-cream) !important;
+  background-image: none !important;
+  color: var(--cjs-charcoal) !important;
+}
+
+.gwt-DialogBox {
+  border: 1px solid var(--cjs-charcoal) !important;
+}
+
+.gwt-DialogBox .Caption {
+  border-bottom: 1px solid var(--cjs-charcoal) !important;
+  box-shadow: inset 3px 0 0 var(--cjs-orange);
+}
+
+.gwt-TextBox,
+.gwt-TextArea,
+.gwt-ListBox,
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  border-color: var(--cjs-charcoal) !important;
+  background-color: var(--cjs-cream) !important;
+  color: var(--cjs-charcoal) !important;
+  caret-color: var(--cjs-orange);
+}
+
+input[type="range"],
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--cjs-orange);
+}
+
+.gwt-Label-selected {
+  border-color: var(--cjs-charcoal) !important;
+  color: var(--cjs-charcoal) !important;
+  box-shadow: inset 3px 0 0 var(--cjs-orange);
+}
+
+.disabled,
+.gwt-MenuItem-disabled,
+.gwt-Button:disabled {
+  color: var(--cjs-charcoal) !important;
+  opacity: 0.45;
+}

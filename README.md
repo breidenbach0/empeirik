@@ -23,6 +23,10 @@ out the pinned official CircuitJS1 source, applies the GPL source overlay under
 `vendor/circuitjs1`, and recompiles the web simulator. A JDK 17-21, Git, Node.js,
 and network access are required for a fresh bridge build.
 
+The simulator keeps its native layout and electrical rendering. A same-origin
+theme layer applies Empeirik's cream, charcoal, and orange palette to the
+CircuitJS1 menus, toolbar, controls, popovers, and dialogs after each load.
+
 ## What the agent can do
 
 empeirik registers 38 WebMCP tools:
@@ -42,18 +46,12 @@ call. New elements can be named with temporary references and used by later
 actions in the same batch. The adapter snapshots the complete circuit and run
 state first, and restores both if any action fails.
 
-See [docs/agent-bridge.md](docs/agent-bridge.md) for the exact manual-to-agent
-mapping and examples.
-
 ## Import and export
 
-The Import button accepts complete CircuitJS legacy-text or XML documents up to
-250 kB. Supported file extensions are `.circuitjs`, `.txt`, and `.xml`; the
-contents must begin with CircuitJS's `$` header or a `<cir>` XML document.
-
-Export offers two re-importable circuit-data files (`.circuitjs` and `.txt`)
-plus schematic images (`.svg` and `.png`). SVG and PNG generation use the live
-CircuitJS1 renderer and therefore require the connected simulator runtime.
+Humans use CircuitJS1's native File menu for import, export, printing, and
+sharing. The outer workspace does not duplicate those controls. Agents use the
+direct `load_circuit`, `inspect_circuit`, `CircuitJS1.exportCircuit()`, and
+`CircuitJS1.getCircuitAsSVG()` paths without opening browser dialogs.
 
 ## Test
 

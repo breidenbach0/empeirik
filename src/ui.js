@@ -38,7 +38,6 @@
     options = options || {};
     var handlers = options.handlers || {};
     var toastTimer = null;
-    var currentCircuitName = "circuit";
 
     function callHandler(name) {
       var args = Array.prototype.slice.call(arguments, 1);
@@ -56,115 +55,6 @@
       }
     }
 
-    function safeFilename(value) {
-      var name = String(value || "circuit")
-        .trim()
-        .replace(/\.(circuitjs|txt|xml)$/i, "")
-        .replace(/[^a-z0-9_-]+/gi, "-")
-        .replace(/^-+|-+$/g, "");
-      return name || "circuit";
-    }
-
-    function closeExportMenu() {
-      var menu = el("export-menu");
-      menu.hidden = true;
-      el("export-circuit").setAttribute("aria-expanded", "false");
-    }
-
-    function toggleExportMenu() {
-      var menu = el("export-menu");
-      var opening = menu.hidden;
-      menu.hidden = !opening;
-      el("export-circuit").setAttribute("aria-expanded", opening ? "true" : "false");
-      if (opening) {
-        var first = menu.querySelector("button[data-export-format]");
-        if (first) first.focus();
-      }
-    }
-
-    function downloadBlob(content, mimeType, extension) {
-      var blob = content instanceof root.Blob
-        ? content
-        : new root.Blob([content], { type: mimeType });
-      var url = root.URL.createObjectURL(blob);
-      var link = doc.createElement("a");
-      link.href = url;
-      link.download = safeFilename(currentCircuitName) + "." + extension;
-      doc.body.appendChild(link);
-      link.click();
-      link.remove();
-      root.setTimeout(function () { root.URL.revokeObjectURL(url); }, 0);
-    }
-
-    function svgToPngBlob(svg) {
-      return new Promise(function (resolve, reject) {
-        var source = new root.Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-        var url = root.URL.createObjectURL(source);
-        var image = new root.Image();
-        image.addEventListener("load", function () {
-          var width = image.naturalWidth || image.width || 1200;
-          var height = image.naturalHeight || image.height || 800;
-          var scale = Math.min(2, 2800 / Math.max(width, height));
-          var canvas = doc.createElement("canvas");
-          canvas.width = Math.max(1, Math.round(width * scale));
-          canvas.height = Math.max(1, Math.round(height * scale));
-          var context = canvas.getContext("2d");
-          context.drawImage(image, 0, 0, canvas.width, canvas.height);
-          root.URL.revokeObjectURL(url);
-          canvas.toBlob(function (blob) {
-            if (blob) resolve(blob);
-            else reject(new Error("The browser could not render the PNG export."));
-          }, "image/png");
-        });
-        image.addEventListener("error", function () {
-          root.URL.revokeObjectURL(url);
-          reject(new Error("The CircuitJS1 SVG could not be rendered as PNG."));
-        });
-        image.src = url;
-      });
-    }
-
-    function exportCircuit(format, button) {
-      var imageFormat = format === "svg" || format === "png";
-      button.disabled = true;
-      return callHandler(imageFormat ? "getCircuitSvg" : "getCircuitText").then(function (data) {
-        if (!data) throw new Error("CircuitJS1 returned an empty export.");
-        if (format === "png") {
-          return svgToPngBlob(data).then(function (blob) {
-            downloadBlob(blob, "image/png", "png");
-          });
-        }
-        if (format === "svg") {
-          downloadBlob(data, "image/svg+xml;charset=utf-8", "svg");
-        } else if (format === "text") {
-          downloadBlob(data, "text/plain;charset=utf-8", "txt");
-        } else {
-          downloadBlob(data, "text/plain;charset=utf-8", "circuitjs");
-        }
-      }).then(function () {
-        closeExportMenu();
-        notify("Circuit exported as ." + (format === "text" ? "txt" : format));
-      }, function (error) {
-        if (!error || !error.empeirikNotified) {
-          notify(error && error.message ? error.message : "Could not export the circuit.", "error");
-        }
-      }).then(function () {
-        button.disabled = false;
-      });
-    }
-
-    function readFile(file) {
-      if (file && typeof file.text === "function") return file.text();
-      return new Promise(function (resolve, reject) {
-        var reader = new root.FileReader();
-        reader.addEventListener("load", function () { resolve(String(reader.result || "")); });
-        reader.addEventListener("error", function () {
-          reject(reader.error || new Error("Could not read the selected circuit file."));
-        });
-        reader.readAsText(file);
-      });
-    }
-
     function notify(message, tone) {
       var toast = el("toast");
       toast.textContent = message;
@@ -176,66 +66,9 @@
     }
 
     function bindEvents() {
-      el("new-session").addEventListener("click", function () {
-        callHandler("newSession");
-      });
-      el("import-circuit").addEventListener("click", function () {
-        el("circuit-import-input").click();
-      });
-      el("circuit-import-input").addEventListener("change", function (event) {
-        var input = event.currentTarget;
-        var file = input.files && input.files[0];
-        if (!file) return;
-        if (!/\.(circuitjs|txt|xml)$/i.test(file.name)) {
-          notify("Import a .circuitjs, .txt, or .xml circuit file.", "error");
-          input.value = "";
-          return;
-        }
-        if (file.size > 250000) {
-          notify("Circuit imports are limited to 250 kB.", "error");
-          input.value = "";
-          return;
-        }
-        var button = el("import-circuit");
-        button.disabled = true;
-        readFile(file).then(function (text) {
-          return callHandler("importCircuit", {
-            circuitText: text,
-            circuitName: file.name
-          }).then(function () {
-            notify("Circuit imported");
-          }, function () {});
-        }, function (error) {
-          notify(error && error.message ? error.message : "Could not read the circuit file.", "error");
-        }).then(function () {
-          input.value = "";
-          button.disabled = false;
-        });
-      });
-      el("export-circuit").addEventListener("click", function () {
-        toggleExportMenu();
-      });
-      var exportButtons = el("export-menu").querySelectorAll("button[data-export-format]");
-      for (var i = 0; i < exportButtons.length; i++) {
-        exportButtons[i].addEventListener("click", function (event) {
-          var button = event.currentTarget;
-          exportCircuit(button.getAttribute("data-export-format"), button);
-        });
-      }
-      doc.addEventListener("click", function (event) {
-        var menu = el("export-menu");
-        if (menu.hidden || menu.contains(event.target) || event.target === el("export-circuit")) return;
-        closeExportMenu();
-      });
-      doc.addEventListener("keydown", function (event) {
-        if (event.key === "Escape" && !el("export-menu").hidden) {
-          closeExportMenu();
-          el("export-circuit").focus();
-        }
-      });
       var benches = doc.querySelectorAll("details.bench");
-      for (var j = 0; j < benches.length; j++) {
-        benches[j].addEventListener("toggle", function (event) {
+      for (var i = 0; i < benches.length; i++) {
+        benches[i].addEventListener("toggle", function (event) {
           if (!event.currentTarget.open) return;
           for (var index = 0; index < benches.length; index++) {
             if (benches[index] !== event.currentTarget) benches[index].open = false;
@@ -479,8 +312,6 @@
     function render(payload) {
       var workspace = payload.workspace;
       var diagnostic = payload.diagnostic;
-      currentCircuitName = workspace.circuitName;
-      el("circuit-title").textContent = workspace.circuitName;
       renderPending(diagnostic);
       renderFeed(workspace, diagnostic);
       renderInvestigation(workspace, diagnostic);

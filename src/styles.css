@@ -54,11 +54,9 @@ button:focus-visible {
 
 .topbar {
   height: var(--topbar-height);
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 0 18px 0 22px;
+  padding: 0 22px;
   border-bottom: 1px solid var(--border);
   background: var(--cream);
   position: relative;
@@ -77,18 +75,6 @@ button:focus-visible {
   line-height: 1;
   letter-spacing: 0.045em;
   text-transform: uppercase;
-}
-
-.top-actions,
-.simulator-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.simulator-actions {
-  position: relative;
 }
 
 .button {
@@ -122,72 +108,6 @@ button:focus-visible {
   color: var(--cream);
 }
 
-.export-popover {
-  width: 268px;
-  position: absolute;
-  top: calc(100% + 10px);
-  right: 0;
-  z-index: 12;
-  border: 1px solid var(--charcoal);
-  border-radius: 5px;
-  background: var(--cream);
-  box-shadow: 6px 6px 0 var(--charcoal);
-}
-
-.export-popover[hidden] {
-  display: none;
-}
-
-.export-popover-heading {
-  display: grid;
-  gap: 4px;
-  padding: 13px 14px 12px;
-  border-bottom: 1px solid var(--charcoal);
-}
-
-.export-popover-heading strong {
-  font-size: 12px;
-}
-
-.export-popover-heading span {
-  font-size: 10px;
-  opacity: 0.62;
-}
-
-.export-format-list {
-  display: grid;
-  padding: 5px;
-}
-
-.export-format {
-  display: grid;
-  gap: 3px;
-  padding: 9px;
-  border: 0;
-  border-radius: 3px;
-  background: transparent;
-  color: var(--charcoal);
-  text-align: left;
-  cursor: pointer;
-}
-
-.export-format:hover:not(:disabled),
-.export-format:focus-visible {
-  background: var(--charcoal);
-  color: var(--cream);
-  box-shadow: inset 3px 0 0 var(--orange);
-}
-
-.export-format span {
-  font-size: 11px;
-  font-weight: 750;
-}
-
-.export-format small {
-  font-size: 9px;
-  opacity: 0.68;
-}
-
 .button-solid {
   border-color: var(--orange);
   background: var(--charcoal);
@@ -211,19 +131,9 @@ button:focus-visible {
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-rows: 64px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   border-right: 1px solid var(--border);
   background: var(--charcoal);
-}
-
-.simulator-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 0 14px 0 18px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
 }
 
 .eyebrow {
@@ -232,20 +142,6 @@ button:focus-visible {
   font-weight: 750;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-}
-
-.circuit-heading {
-  min-width: 0;
-}
-
-.circuit-heading h2 {
-  margin: 5px 0 0;
-  overflow: hidden;
-  font-size: 15px;
-  font-weight: 670;
-  line-height: 1.1;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .circuitjs-slot {
@@ -678,29 +574,8 @@ button:focus-visible {
     border-bottom: 1px solid var(--border);
   }
 
-  .simulator-toolbar {
-    align-items: flex-start;
-    padding: 12px;
-  }
-
-  .simulator-actions {
-    flex-wrap: wrap;
-  }
-
   .session-panel {
     height: 70vh;
     min-height: 580px;
   }
-}
-
-@media (max-width: 560px) {
-  .simulator-toolbar {
-    display: block;
-  }
-
-  .simulator-actions {
-    justify-content: flex-start;
-    margin-top: 12px;
-  }
-
 }
