@@ -32,6 +32,7 @@ git -C "$SOURCE_ROOT" checkout --detach "$UPSTREAM_COMMIT"
 
 echo "Applying the empeirik native editor bridge"
 cp -R "$PROJECT_ROOT/vendor/circuitjs1/src/." "$SOURCE_ROOT/src/"
+git -C "$SOURCE_ROOT" apply --unidiff-zero "$PROJECT_ROOT/vendor/circuitjs1/empeirik-canvas-theme.patch"
 
 echo "Compiling CircuitJS1"
 JAVA_HOME="$EMPEIRIK_JAVA_HOME" \

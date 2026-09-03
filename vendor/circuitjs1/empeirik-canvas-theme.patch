@@ -1,0 +1,36 @@
+diff --git a/src/com/lushprojects/circuitjs1/client/Scope.java b/src/com/lushprojects/circuitjs1/client/Scope.java
+index 625cd8d..48d54aa 100644
+--- a/src/com/lushprojects/circuitjs1/client/Scope.java
++++ b/src/com/lushprojects/circuitjs1/client/Scope.java
+@@ -1063 +1063 @@ void showPlotValue(int val, boolean b) {
+-	g.setColor(app.isPrintable() ? Color.white : Color.black);
++	g.setColor(app.getBackgroundColor());
+diff --git a/src/com/lushprojects/circuitjs1/client/UIManager.java b/src/com/lushprojects/circuitjs1/client/UIManager.java
+index 7a2bccb..16b3cc7 100644
+--- a/src/com/lushprojects/circuitjs1/client/UIManager.java
++++ b/src/com/lushprojects/circuitjs1/client/UIManager.java
+@@ -48,0 +49,3 @@ public class UIManager {
++    static final Color EMPEIRIK_CANVAS_BACKGROUND = new Color("#f7f3eb");
++    static final Color EMPEIRIK_CANVAS_FOREGROUND = new Color("#3f3d3a");
++
+@@ -139 +142 @@ public class UIManager {
+-	    printable = qp.getBooleanValue("whiteBackground", getOptionFromStorage("whiteBackground", false));
++	    printable = qp.getBooleanValue("whiteBackground", getOptionFromStorage("whiteBackground", true));
+@@ -578,4 +581,4 @@ public class UIManager {
+-            CircuitElm.whiteColor = Color.black;
+-            CircuitElm.lightGrayColor = Color.black;
+-            g.setColor(Color.white);
+-            cv.getElement().getStyle().setBackgroundColor("#fff");
++            CircuitElm.whiteColor = EMPEIRIK_CANVAS_FOREGROUND;
++            CircuitElm.lightGrayColor = EMPEIRIK_CANVAS_FOREGROUND;
++            g.setColor(EMPEIRIK_CANVAS_BACKGROUND);
++            cv.getElement().getStyle().setBackgroundColor(EMPEIRIK_CANVAS_BACKGROUND.getHexValue());
+@@ -641 +644 @@ public class UIManager {
+-        g.setColor(Color.white);
++        g.setColor(menus.printableCheckItem.getState() ? EMPEIRIK_CANVAS_FOREGROUND : Color.white);
+@@ -808 +811 @@ public class UIManager {
+-	g.setColor(menus.printableCheckItem.getState() ? "#eee" : "#111");
++	g.setColor(menus.printableCheckItem.getState() ? EMPEIRIK_CANVAS_BACKGROUND : new Color("#111"));
+@@ -895 +898 @@ public class UIManager {
+-	    return Color.white;
++	    return EMPEIRIK_CANVAS_BACKGROUND;
