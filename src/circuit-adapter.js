@@ -449,6 +449,54 @@
     return this.lastCircuitText;
   };
 
+  CircuitJS1BridgeAdapter.prototype.exportCircuitSvg = function () {
+    var sim = this.sim;
+    if (!sim || typeof sim.getCircuitAsSVG !== "function") {
+      return Promise.reject(new Error("SVG export requires the connected CircuitJS1 runtime."));
+    }
+    return new Promise(function (resolve, reject) {
+      var previousHook = sim.onsvgrendered;
+      var settled = false;
+      var timer = root.setTimeout(function () {
+        finish(new Error("CircuitJS1 did not finish the SVG export."));
+      }, 5000);
+
+      function restoreHook() {
+        if (sim.onsvgrendered === handleSvg) sim.onsvgrendered = previousHook;
+      }
+
+      function finish(error, svg) {
+        if (settled) return;
+        settled = true;
+        root.clearTimeout(timer);
+        restoreHook();
+        if (error) reject(error);
+        else resolve(String(svg));
+      }
+
+      function handleSvg(api, svg) {
+        if (typeof previousHook === "function") {
+          try { previousHook(api, svg); } catch (e) { /* external hook */ }
+        }
+        if (typeof svg !== "string" || svg.indexOf("<svg") === -1) {
+          finish(new Error("CircuitJS1 returned an invalid SVG export."));
+          return;
+        }
+        finish(null, svg);
+      }
+
+      sim.onsvgrendered = handleSvg;
+      try {
+        var immediate = sim.getCircuitAsSVG();
+        if (typeof immediate === "string" && immediate.indexOf("<svg") !== -1) {
+          finish(null, immediate);
+        }
+      } catch (error) {
+        finish(error);
+      }
+    });
+  };
+
   CircuitJS1BridgeAdapter.prototype.importCircuit = async function (circuitText) {
     var text = String(circuitText || "").trim();
     if (!isCircuitDocument(text)) {

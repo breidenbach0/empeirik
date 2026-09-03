@@ -2,8 +2,9 @@
 
 empeirik is a CircuitJS1-first workspace where a WebMCP agent can inspect,
 build, edit, simulate, and diagnose the same circuit the human sees. There is no
-second schematic or abstract diagnostic canvas: CircuitJS1 remains the source of
-truth and the session panel is one chronological human/agent work log.
+second schematic: CircuitJS1 remains the source of truth. The session panel pairs
+one chronological human/agent work log with expandable Investigation, Evidence,
+Hypotheses, and Repair benches that summarize the same underlying actions.
 There is no Build/Diagnose mode: the user's request determines what the agent
 does in the shared circuit workspace.
 
@@ -42,6 +43,16 @@ state first, and restores both if any action fails.
 
 See [docs/agent-bridge.md](docs/agent-bridge.md) for the exact manual-to-agent
 mapping and examples.
+
+## Import and export
+
+The Import button accepts complete CircuitJS legacy-text or XML documents up to
+250 kB. Supported file extensions are `.circuitjs`, `.txt`, and `.xml`; the
+contents must begin with CircuitJS's `$` header or a `<cir>` XML document.
+
+Export offers two re-importable circuit-data files (`.circuitjs` and `.txt`)
+plus schematic images (`.svg` and `.png`). SVG and PNG generation use the live
+CircuitJS1 renderer and therefore require the connected simulator runtime.
 
 ## Test
 

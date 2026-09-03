@@ -3,8 +3,8 @@
  *
  * This is the small, concrete layer shared by the page and WebMCP. It keeps
  * the user's goal and a chronological work log while CircuitJS1 remains the
- * source of truth for the circuit itself. It deliberately does not model a
- * second schematic or expose a separate "diagnostic state" UI.
+ * source of truth for the circuit itself. Structured UI benches read this state
+ * and the diagnostic engine directly rather than modeling a second schematic.
  */
 (function (root, factory) {
   var api = factory(root);

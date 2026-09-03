@@ -127,6 +127,19 @@
       equal(state.globalEditFields[0].name, "Time step", "global fields included");
     });
 
+    await test("SVG export resolves the native asynchronous renderer hook", async function () {
+      var fixture = liveAdapter();
+      fixture.sim.getCircuitAsSVG = function () {
+        var sim = this;
+        setTimeout(function () {
+          sim.onsvgrendered(sim, '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"></svg>');
+        }, 0);
+      };
+      var svg = await fixture.adapter.exportCircuitSvg();
+      assert(svg.indexOf("<svg") === 0, "native SVG should be returned");
+      assert(typeof fixture.sim.onsvgrendered === "undefined", "temporary SVG hook should be restored");
+    });
+
     await test("atomic batches resolve new-element aliases", async function () {
       var fixture = liveAdapter();
       var result = await fixture.adapter.applyEditorActions([

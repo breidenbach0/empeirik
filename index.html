@@ -30,14 +30,50 @@
           <h2 id="circuit-title">Environmental controller board</h2>
         </div>
         <div class="simulator-actions">
-          <button id="import-circuit" class="button button-quiet" type="button">Import</button>
+          <button
+            id="import-circuit"
+            class="button button-quiet"
+            type="button"
+            title="Import .circuitjs, .txt, or .xml files up to 250 kB"
+          >Import</button>
           <input
             id="circuit-import-input"
             type="file"
-            accept=".txt,.xml,.circuitjs,text/plain,application/xml"
+            accept=".circuitjs,.txt,.xml,text/plain,application/xml,text/xml"
             hidden
           />
-          <button id="export-circuit" class="button button-quiet" type="button">Export</button>
+          <button
+            id="export-circuit"
+            class="button button-quiet"
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded="false"
+            aria-controls="export-menu"
+          >Export</button>
+          <div id="export-menu" class="export-popover" role="dialog" aria-labelledby="export-title" hidden>
+            <div class="export-popover-heading">
+              <strong id="export-title">Export circuit</strong>
+              <span>Choose a file format</span>
+            </div>
+            <div class="export-format-list">
+              <button class="export-format" type="button" data-export-format="circuitjs">
+                <span>CircuitJS file</span>
+                <small>.circuitjs · re-importable</small>
+              </button>
+              <button class="export-format" type="button" data-export-format="text">
+                <span>Plain text</span>
+                <small>.txt · re-importable</small>
+              </button>
+              <button class="export-format" type="button" data-export-format="svg">
+                <span>Vector image</span>
+                <small>.svg · scalable schematic</small>
+              </button>
+              <button class="export-format" type="button" data-export-format="png">
+                <span>PNG image</span>
+                <small>.png · rendered schematic</small>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -67,6 +103,40 @@ npm start</code></pre>
             <h3 id="activity-title">Work log</h3>
           </div>
           <div id="session-feed" class="session-feed"></div>
+        </section>
+
+        <section class="bench-section" aria-label="Investigation workspace">
+          <details class="bench" name="session-bench" data-bench="investigation">
+            <summary>
+              <span>Investigation</span>
+              <span id="investigation-count" class="bench-count">0</span>
+            </summary>
+            <div id="investigation-bench" class="bench-content"></div>
+          </details>
+
+          <details class="bench" name="session-bench" data-bench="evidence">
+            <summary>
+              <span>Evidence</span>
+              <span id="evidence-count" class="bench-count">0</span>
+            </summary>
+            <div id="evidence-bench" class="bench-content"></div>
+          </details>
+
+          <details class="bench" name="session-bench" data-bench="hypotheses">
+            <summary>
+              <span>Hypotheses</span>
+              <span id="hypothesis-count" class="bench-count">0</span>
+            </summary>
+            <div id="hypothesis-bench" class="bench-content"></div>
+          </details>
+
+          <details class="bench" name="session-bench" data-bench="repair">
+            <summary>
+              <span>Repair bench</span>
+              <span id="repair-state" class="bench-count">Empty</span>
+            </summary>
+            <div id="repair-bench" class="bench-content"></div>
+          </details>
         </section>
       </div>
     </aside>

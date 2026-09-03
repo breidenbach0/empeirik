@@ -76,6 +76,12 @@
         getCircuitText: function () {
           return adapter.exportCircuit();
         },
+        getCircuitSvg: function () {
+          if (!adapter.exportCircuitSvg) {
+            throw new Error("SVG and PNG export require the connected CircuitJS1 runtime.");
+          }
+          return adapter.exportCircuitSvg();
+        },
         performMeasurement: function (taskId) {
           return engine.performMeasurement({ taskId: taskId }, { actor: "human" });
         },

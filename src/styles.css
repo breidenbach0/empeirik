@@ -1,19 +1,22 @@
 :root {
-  color-scheme: dark;
-  --bg: #080a0c;
-  --surface: #0d1013;
-  --surface-raised: #12161a;
-  --surface-soft: #171c21;
-  --border: #252b31;
-  --border-strong: #3b434b;
-  --text: #f3f5f7;
-  --muted: #929ba4;
-  --muted-strong: #bcc3c9;
-  --accent: #b9f66c;
-  --accent-ink: #11170a;
-  --warning: #f0c36a;
-  --danger: #ff8f86;
-  --blue: #84b7ff;
+  color-scheme: light;
+  --cream: #f7f3eb;
+  --charcoal: #3f3d3a;
+  --orange: #d8794d;
+  --bg: var(--cream);
+  --surface: var(--cream);
+  --surface-raised: var(--cream);
+  --surface-soft: var(--orange);
+  --border: var(--charcoal);
+  --border-strong: var(--charcoal);
+  --text: var(--charcoal);
+  --muted: var(--charcoal);
+  --muted-strong: var(--charcoal);
+  --accent: var(--orange);
+  --accent-ink: var(--charcoal);
+  --warning: var(--orange);
+  --danger: var(--orange);
+  --blue: var(--orange);
   --topbar-height: 62px;
   font-family:
     Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -57,7 +60,7 @@ button:focus-visible {
   gap: 24px;
   padding: 0 18px 0 22px;
   border-bottom: 1px solid var(--border);
-  background: #090b0d;
+  background: var(--cream);
   position: relative;
   z-index: 5;
 }
@@ -82,6 +85,10 @@ button:focus-visible {
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.simulator-actions {
+  position: relative;
 }
 
 .button {
@@ -110,21 +117,87 @@ button:focus-visible {
 }
 
 .button-quiet:hover:not(:disabled) {
-  border-color: var(--border-strong);
-  background: var(--surface-soft);
-  color: var(--text);
+  border-color: var(--orange);
+  background: var(--charcoal);
+  color: var(--cream);
+}
+
+.export-popover {
+  width: 268px;
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 12;
+  border: 1px solid var(--charcoal);
+  border-radius: 5px;
+  background: var(--cream);
+  box-shadow: 6px 6px 0 var(--charcoal);
+}
+
+.export-popover[hidden] {
+  display: none;
+}
+
+.export-popover-heading {
+  display: grid;
+  gap: 4px;
+  padding: 13px 14px 12px;
+  border-bottom: 1px solid var(--charcoal);
+}
+
+.export-popover-heading strong {
+  font-size: 12px;
+}
+
+.export-popover-heading span {
+  font-size: 10px;
+  opacity: 0.62;
+}
+
+.export-format-list {
+  display: grid;
+  padding: 5px;
+}
+
+.export-format {
+  display: grid;
+  gap: 3px;
+  padding: 9px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--charcoal);
+  text-align: left;
+  cursor: pointer;
+}
+
+.export-format:hover:not(:disabled),
+.export-format:focus-visible {
+  background: var(--charcoal);
+  color: var(--cream);
+  box-shadow: inset 3px 0 0 var(--orange);
+}
+
+.export-format span {
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.export-format small {
+  font-size: 9px;
+  opacity: 0.68;
 }
 
 .button-solid {
-  border-color: var(--text);
-  background: var(--text);
-  color: #090b0d;
+  border-color: var(--orange);
+  background: var(--charcoal);
+  color: var(--cream);
 }
 
 .button-solid:hover:not(:disabled) {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--accent-ink);
+  border-color: var(--orange);
+  background: var(--cream);
+  color: var(--charcoal);
 }
 
 .workspace-shell {
@@ -140,7 +213,7 @@ button:focus-visible {
   display: grid;
   grid-template-rows: 64px minmax(0, 1fr);
   border-right: 1px solid var(--border);
-  background: #000;
+  background: var(--charcoal);
 }
 
 .simulator-toolbar {
@@ -180,7 +253,7 @@ button:focus-visible {
   min-height: 0;
   position: relative;
   overflow: hidden;
-  background: #000;
+  background: var(--charcoal);
 }
 
 #circuitjs-frame {
@@ -188,7 +261,7 @@ button:focus-visible {
   width: 100%;
   height: 100%;
   border: 0;
-  background: #000;
+  background: var(--charcoal);
 }
 
 .runtime-message {
@@ -215,8 +288,8 @@ button:focus-visible {
   padding: 12px;
   overflow: auto;
   border: 1px solid var(--border);
-  background: #050607;
-  color: var(--accent);
+  background: var(--charcoal);
+  color: var(--cream);
   font: 12px/1.55 "SFMono-Regular", Consolas, monospace;
 }
 
@@ -238,10 +311,11 @@ button:focus-visible {
 .session-body {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(190px, 1.1fr) minmax(210px, 0.9fr);
   grid-template-areas:
     "pending"
-    "activity";
+    "activity"
+    "benches";
   overflow: hidden;
 }
 
@@ -251,6 +325,10 @@ button:focus-visible {
 
 .activity-section {
   grid-area: activity;
+}
+
+.bench-section {
+  grid-area: benches;
 }
 
 .pending-section,
@@ -280,23 +358,23 @@ button:focus-visible {
 }
 
 .pending-section {
-  background: rgba(240, 195, 106, 0.035);
+  background: var(--cream);
 }
 
 .pending-section .section-label-row h3,
 .pending-section .section-label-row > span {
-  color: var(--warning);
+  color: var(--charcoal);
 }
 
 .pending-card {
   margin-top: 12px;
   padding: 14px;
-  border: 1px solid rgba(240, 195, 106, 0.45);
-  background: #11100c;
+  border: 1px solid var(--orange);
+  background: var(--cream);
 }
 
 .pending-label {
-  color: var(--warning);
+  color: var(--charcoal);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.11em;
@@ -324,6 +402,103 @@ button:focus-visible {
   overflow: hidden;
 }
 
+.bench-section {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid var(--charcoal);
+  background: var(--cream);
+  scrollbar-color: var(--charcoal) transparent;
+}
+
+.bench {
+  border-bottom: 1px solid var(--charcoal);
+}
+
+.bench summary {
+  min-height: 43px;
+  padding: 14px 18px;
+  color: var(--charcoal);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.bench summary::marker {
+  color: var(--orange);
+}
+
+.bench[open] summary {
+  color: var(--charcoal);
+  box-shadow: inset 3px 0 0 var(--orange);
+}
+
+.bench-count {
+  float: right;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.bench-content {
+  max-height: 200px;
+  padding: 0 18px 12px 35px;
+  overflow-y: auto;
+  scrollbar-color: var(--charcoal) transparent;
+}
+
+.bench-item {
+  padding: 11px 0 12px;
+  border-top: 1px solid var(--charcoal);
+}
+
+.bench-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.66;
+}
+
+.bench-item h4 {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 6px 0 3px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.bench-item p,
+.bench-empty {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.55;
+  opacity: 0.72;
+}
+
+.bench-secondary {
+  margin-top: 5px !important;
+}
+
+.bench-value {
+  flex: 0 0 auto;
+  color: var(--charcoal);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.bench-empty {
+  padding: 4px 0 15px;
+}
+
 .session-feed {
   min-height: 0;
   margin-top: 8px;
@@ -334,15 +509,15 @@ button:focus-visible {
   -webkit-mask-image: linear-gradient(
     to bottom,
     transparent 0,
-    #000 14px,
-    #000 calc(100% - 16px),
+    var(--charcoal) 14px,
+    var(--charcoal) calc(100% - 16px),
     transparent 100%
   );
   mask-image: linear-gradient(
     to bottom,
     transparent 0,
-    #000 14px,
-    #000 calc(100% - 16px),
+    var(--charcoal) 14px,
+    var(--charcoal) calc(100% - 16px),
     transparent 100%
   );
 }
@@ -452,8 +627,8 @@ button:focus-visible {
   padding: 10px 13px;
   border: 1px solid var(--border-strong);
   border-radius: 5px;
-  background: var(--text);
-  color: #090b0d;
+  background: var(--charcoal);
+  color: var(--cream);
   font-size: 12px;
   font-weight: 700;
   opacity: 0;
@@ -471,8 +646,8 @@ button:focus-visible {
 
 .toast.is-error {
   border-color: var(--danger);
-  background: #27100f;
-  color: var(--danger);
+  background: var(--cream);
+  color: var(--charcoal);
 }
 
 @media (max-width: 1080px) {

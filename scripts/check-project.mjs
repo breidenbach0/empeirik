@@ -77,6 +77,13 @@ check(html.includes("<h1>empeirik</h1>"), "index.html must use the empeirik prod
 check(html.includes('id="import-circuit"'), "workspace must expose Import");
 check(html.includes('id="export-circuit"'), "workspace must expose Export");
 check(html.includes('id="circuit-import-input"'), "Import must use a real local file input");
+check(html.includes(".circuitjs,.txt,.xml"), "Import must advertise the three supported circuit file extensions");
+for (const benchId of ["investigation-bench", "evidence-bench", "hypothesis-bench", "repair-bench"]) {
+  check(html.includes(`id="${benchId}"`), `workspace must expose ${benchId}`);
+}
+for (const format of ["circuitjs", "text", "svg", "png"]) {
+  check(html.includes(`data-export-format="${format}"`), `Export picker must expose ${format}`);
+}
 check(!html.includes("copy-prompt"), "the redundant prompt card must not remain in the page");
 check(!html.includes("toggle-simulation"), "the outer duplicate simulation button must not remain");
 check(!html.includes("simulator-status"), "the simulator noise strip must not remain");
@@ -213,6 +220,7 @@ const adapterSrc = readFileSync(resolve(ROOT, "src/circuit-adapter.js"), "utf8")
 check(adapterSrc.includes("oncircuitjsloaded"), "adapter must use the documented oncircuitjsloaded handshake");
 check(adapterSrc.includes("importCircuit"), "adapter must use importCircuit");
 check(adapterSrc.includes("getNodeVoltage"), "adapter must use getNodeVoltage");
+check(adapterSrc.includes("exportCircuitSvg") && adapterSrc.includes("getCircuitAsSVG"), "adapter must expose native CircuitJS1 SVG export");
 check(adapterSrc.includes("applyEditorActions"), "adapter must expose atomic CircuitJS1 editor actions");
 check(adapterSrc.includes("EDITOR_ROLLBACK_FAILED"), "adapter must guard failed editor-action rollback");
 
@@ -289,6 +297,7 @@ check(mainSrc.includes("circuitjs-frame"), "main.js must mount CircuitJS1 as the
 check(mainSrc.includes('circuitjs/circuitjs.html"'), "main.js must mount the default CircuitJS1 page");
 check(!mainSrc.includes("circuitjs.html?lang="), "CircuitJS1 must use its browser or saved language preference");
 check(mainSrc.includes("root.Empeirik"), "main.js must expose the empeirik browser API");
+check(mainSrc.includes("getCircuitSvg"), "main.js must wire CircuitJS1 image export");
 check(!mainSrc.includes("DEMO_STEPS"), "main.js must not hard-code the old guided demo");
 check(!mainSrc.includes("setLastCall"), "main.js must not wire the removed raw tool-call inspector");
 
@@ -297,10 +306,15 @@ check(uiSrc.includes("createUI"), "ui.js must export createUI");
 check(uiSrc.includes('callHandler("importCircuit"'), "Import must load the selected circuit through the workspace");
 check(!uiSrc.includes("setModeUI") && !uiSrc.includes("WebMCP preview"), "UI code must not retain removed mode or WebMCP status chrome");
 check(!uiSrc.includes("setLastCall") && !uiSrc.includes("workspace-revision"), "UI code must not retain raw call or visible revision chrome");
+check(uiSrc.includes("renderInvestigation") && uiSrc.includes("renderEvidence") && uiSrc.includes("renderHypotheses") && uiSrc.includes("renderRepairBench"), "UI must render all four expandable benches");
+check(uiSrc.includes("svgToPngBlob") && uiSrc.includes("downloadBlob"), "UI must provide downloadable image and circuit exports");
 const styles = readFileSync(resolve(ROOT, "src/styles.css"), "utf8");
-check(styles.includes(".session-body") && styles.includes("grid-template-rows: auto minmax(0, 1fr)"), "session panel must keep the work log in a stable grid row");
+check(styles.includes(".session-body") && styles.includes("minmax(190px, 1.1fr) minmax(210px, 0.9fr)"), "session panel must keep fixed work-log and bench rows");
 check(styles.includes('"activity"') && styles.includes("grid-area: activity"), "hidden session rows must not displace the work-log viewport");
 check(styles.includes(".session-feed") && styles.includes("overflow-y: auto") && styles.includes("mask-image"), "work log must be an internally scrolling masked viewport");
+check(styles.includes(".bench-section") && styles.includes(".bench summary"), "diagnostic benches must be expandable beneath the work log");
+const palette = Array.from(new Set((styles.match(/#[0-9a-fA-F]{6}/g) || []).map((color) => color.toLowerCase()))).sort();
+check(JSON.stringify(palette) === JSON.stringify(["#3f3d3a", "#d8794d", "#f7f3eb"].sort()), "outer workspace must use only the logo's charcoal, orange, and cream colors");
 check(!html.includes("Guided view"), "the duplicate guided canvas must not remain in the page");
 check(!html.includes("Diagnostic state"), "the abstract diagnostic-state screen must not remain in the page");
 check(!html.includes("Collaboration console"), "the separate collaboration console must not remain in the page");
