@@ -151,6 +151,11 @@ const palette = [...new Set((styles.match(/#[0-9a-fA-F]{6}/g) || []).map((color)
 check(JSON.stringify(palette) === JSON.stringify(["#3f3d3a", "#d8794d", "#f7f3eb"].sort()), "outer UI must use only the logo palette");
 const circuitTheme = readFileSync(resolve(ROOT, "src/circuitjs-theme.css"), "utf8");
 check(circuitTheme.includes("border: 0 !important") && circuitTheme.includes("border-bottom: 1px solid var(--cjs-charcoal)"), "CircuitJS1 stacked chrome must use single 1px seams");
+const circuitMenuRule = circuitTheme.match(/\.gwt-MenuBar-horizontal\s*\{[^}]*\}/s)?.[0] || "";
+check(!circuitMenuRule.includes("border-bottom"), "CircuitJS1 menu must not draw a second partial-width horizontal seam");
+const circuitPanelRule = circuitTheme.match(/#painel\s*\{[^}]*\}/s)?.[0] || "";
+check(circuitPanelRule.includes("border-left: 1px solid var(--cjs-charcoal)"), "CircuitJS1 controls must define the circuit field with one 1px vertical seam");
+check(!styles.includes(".bench[open] summary"), "expanded workspace panels must not thicken the circuit divider");
 
 const mainSource = readFileSync(resolve(ROOT, "src/main.js"), "utf8");
 check(mainSource.includes("circuitjs.html?startCircuit=blank.txt"), "new sessions must open CircuitJS1's blank circuit");

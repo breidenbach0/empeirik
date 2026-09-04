@@ -294,11 +294,6 @@ button:focus-visible {
   color: var(--orange);
 }
 
-.bench[open] summary {
-  color: var(--charcoal);
-  box-shadow: inset 3px 0 0 var(--orange);
-}
-
 .bench-count {
   float: right;
   font-family: "SFMono-Regular", Consolas, monospace;
