@@ -55,7 +55,8 @@ check(!html.includes("scenario.js") && !html.includes("diagnostic-engine.js"), "
 check(html.includes('href="assets/empeirik-logo.png"'), "index.html must use the supplied Empeirik PNG as favicon");
 const favicon = readFileSync(resolve(ROOT, "assets/empeirik-logo.png"));
 check(favicon.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])), "favicon must be a valid PNG");
-check(html.includes("<h1>empeirik</h1>"), "page must use the empeirik product name");
+check(html.includes("<title>Circuit workspace</title>"), "browser title must describe the workspace without product chrome");
+check(!html.includes('class="topbar"') && !html.includes("<h1>"), "visible project header and name must stay removed");
 for (const benchId of ["investigation-bench", "evidence-bench", "hypothesis-bench", "repair-bench"]) {
   check(html.includes(`id="${benchId}"`), `workspace must expose ${benchId}`);
 }
@@ -144,7 +145,8 @@ check(nativeEntry.includes("agentBridge.install()"), "CircuitJS1 must install th
 const styles = readFileSync(resolve(ROOT, "src/styles.css"), "utf8");
 check(styles.includes("--divider: 1px solid var(--charcoal)"), "outer circuit dividers must share one 1px token");
 const panelStackRule = styles.match(/\.panel-stack\s*\{[^}]*\}/s)?.[0] || "";
-check(!panelStackRule.includes("border-top"), "right rail must not double the topbar divider");
+check(!panelStackRule.includes("border-top"), "right rail must not add a duplicate circuit-edge divider");
+check(!styles.includes(".topbar") && styles.includes("height: 100dvh"), "workspace must fill the viewport after removing the header");
 const palette = [...new Set((styles.match(/#[0-9a-fA-F]{6}/g) || []).map((color) => color.toLowerCase()))].sort();
 check(JSON.stringify(palette) === JSON.stringify(["#3f3d3a", "#d8794d", "#f7f3eb"].sort()), "outer UI must use only the logo palette");
 const circuitTheme = readFileSync(resolve(ROOT, "src/circuitjs-theme.css"), "utf8");
